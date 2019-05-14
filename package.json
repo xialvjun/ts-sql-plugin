@@ -1,0 +1,35 @@
+{
+  "name": "ts-sql-plugin",
+  "version": "0.1.0",
+  "description": "TypeScript Language Service Plugin for SQL especially for github:andywer/squid, a SQL tagged template strings builder.",
+  "keywords": [
+    "typescript",
+    "language service",
+    "sql",
+    "squid"
+  ],
+  "main": "lib/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "clean": "rimraf lib types",
+    "build": "yarn clean && tsc -p .",
+    "watch": "tsc --watch -p ."
+  },
+  "author": "xialvjun@live.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xialvjun/ts-sql-plugin.git"
+  },
+  "dependencies": {
+    "squid": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.0.1",
+    "rimraf": "^2.6.3",
+    "typescript": "^3.4.5"
+  },
+  "peerDependencies": {
+    "typescript": "^3.0.0"
+  }
+}
