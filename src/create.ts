@@ -39,7 +39,7 @@ const default_tags = {
 };
 
 export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
-  const logger = (msg: string) => info.project.projectService.logger.info(`[ts-pgsql-plugin] ${msg}`);
+  const logger = (msg: string) => info.project.projectService.logger.info(`[ts-sql-plugin] ${msg}`);
   logger('config: ' + JSON.stringify(info.config));
 
   const config: TsSqlPluginConfig = { command: default_command, ...info.config, tags: { ...default_tags, ...(info.config || {}).tags } };
@@ -74,11 +74,10 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               n.template.templateSpans.forEach(span => {
                 values.push(null);
                 if (tss.isCallExpression(span.expression)) {
-                  logger(span.expression.getFirstToken().getText());
-                  logger(span.expression.getText());
-                  const fn = fns[span.expression.getFirstToken().getText()];
+                  const fn = fns[span.expression.expression.getLastToken().getText()];
                   if (!!fn) {
                     const t = type_checker.getTypeAtLocation(span.expression.arguments[0]);
+                    logger(t.getProperty(sql.symbol));
                     const fake = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
                     values.pop();
                     values.push(fn(fake));
@@ -104,7 +103,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               let query_config = sql((texts as unknown) as TemplateStringsArray, ...values);
               let s = query_config.text.replace(/\$\d+/g, 'null').replace(/'/g, "'");
               let buffer_rs = child_process.execSync(`${config.command} 'EXPLAIN ${s}'`);
-              let messageText = buffer_rs.toString('utf8');
+              // let messageText = buffer_rs.toString('utf8');
               return null;
             } catch (error) {
               diagnostic.messageText = error.message;

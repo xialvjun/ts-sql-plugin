@@ -3,7 +3,7 @@ import path from 'path';
 
 import { ApolloServer, gql } from 'apollo-server';
 import pg_promise from 'pg-promise';
-import { sql, spreadAnd as sql_and, spreadInsert as sql_ins, spreadUpdate as sql_upd } from 'squid/pg';
+import sql from '../../src/sql';
 
 import * as skm from './skm';
 
@@ -16,7 +16,7 @@ const typeDefs = gql(fs.readFileSync(path.join(__dirname, '../schema.gql'), 'utf
 const resolvers = {
   Book: {
     author: async (root, args, ctx) => {
-      return await pgp.one(sql`select * from books where _id=${root._id}`);
+      return await pgp.one(sql`select * from books where id=${root.id}`);
     }
   },
   Person: {
@@ -26,16 +26,18 @@ const resolvers = {
       // or
       // sql`seelct * from books where 1=1 and ${sql_and({author_id: root._id, publisher: args.publisher})}${args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``}`
       // todo: rename spreadAnd spreadInsert spreadUpdate to sql, sql.and, sql.ins, sql.upd, sql.raw
-      if (args.title_like && args.publisher) {
-        return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and title like ${'%'+args.title_like+'%'} and publisher=${args.publisher}`);
-      }
-      if (args.title_like && !args.publisher) {
-        return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and title like ${'%'+args.title_like+'%'}`);
-      }
-      if (!args.title_like && args.publisher) {
-        return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and publisher=${args.publisher}`);
-      }
-      return await pgp.manyOrNone(sql`select * from books where author_id=${root._id};`);
+      // if (args.title_like && args.publisher) {
+      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and title like ${'%'+args.title_like+'%'} and publisher=${args.publisher}`);
+      // }
+      // if (args.title_like && !args.publisher) {
+      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and title like ${'%'+args.title_like+'%'}`);
+      // }
+      // if (!args.title_like && args.publisher) {
+      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and publisher=${args.publisher}`);
+      // }
+      // return await pgp.manyOrNone(sql`select * from books where author_id=${root._id};`);
+      let raw_obj = args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``;
+      return await pgp.manyOrNone(sql`select * from books where 1=1 and ${sql.and({author_id: root._id, publisher: args.publisher})} ${raw_obj}`)
     }
   },
   Query: {

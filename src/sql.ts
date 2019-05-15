@@ -1,8 +1,8 @@
-export const sql = (texts: TemplateStringsArray, ...vs: any[]) => {
+const raw = (texts: TemplateStringsArray, ...vs: any[]) => {
   let text = texts[0];
   let values = [];
   vs.forEach((v, idx) => {
-    if (typeof v === 'object' && v[symbol]) {
+    if (!!v && v[symbol]) {
       text += v.text;
       values = [...values, ...v.values];
     } else {
@@ -11,30 +11,20 @@ export const sql = (texts: TemplateStringsArray, ...vs: any[]) => {
     }
     text += texts[idx+1] || '';
   });
-  text = text.split('??').reduce((acc, cv, ci) => acc + '$' + ci + cv);
   return { [symbol]: true, text, values };
+};
+
+export const sql = (texts: TemplateStringsArray, ...vs: any[]) => {
+  let query = raw(texts, ...vs);
+  query.text = query.text.split('??').reduce((acc, cv, ci) => acc + '$' + ci + cv);
+  return query;
 };
 
 export default sql;
 
 const symbol = (sql.symbol = Symbol('sql'));
 
-// todo sql.raw is infact sql: sql.raw = sql only delete text.replace 
-sql.raw = (texts: TemplateStringsArray, ...vs: any[]) => {
-  let text = texts[0];
-  let values = [];
-  vs.forEach((v, idx) => {
-    if (typeof v === 'object' && v[symbol]) {
-      text += v.text;
-      values = [...values, ...v.values];
-    } else {
-      text += '??';
-      values.push(v);
-    }
-    text += texts[idx+1] || '';
-  });
-  return { [symbol]: true, text, values };
-};
+sql.raw = raw;
 
 // const to_and = {m: undefined, n: undefined};
 // no first and
