@@ -1,0 +1,17 @@
+{
+  "name": "test_ts_sql_plugin",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "author": "xialvjun@live.com",
+  "license": "MIT",
+  "dependencies": {
+    "apollo-server": "^2.5.0",
+    "graphql-date": "^1.0.3",
+    "graphql-type-json": "^0.3.0",
+    "pg-promise": "^8.7.2",
+    "squid": "^0.4.0",
+    "ts-sql-plugin": "file",
+    "typescript": "^3.4.5",
+    "uuid": "^3.3.2"
+  }
+}
