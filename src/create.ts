@@ -2,15 +2,16 @@ import * as ts from 'typescript'; // used as value, passed in by tsserver at run
 import * as tss from 'typescript/lib/tsserverlibrary'; // used as type only
 
 import * as child_process from 'child_process';
-import { sql, spreadAnd, spreadInsert, spreadUpdate } from 'squid/pg';
+import sql from './sql';
 
 export interface TsSqlPluginConfig {
   command: string;
   tags: {
     sql: string;
-    spreadAnd: string;
-    spreadInsert: string;
-    spreadUpdate: string;
+    and: string;
+    ins: string;
+    upd: string;
+    raw: string;
   };
 }
 
@@ -28,12 +29,13 @@ function findAllNodes(sourceFile: tss.SourceFile, cond: (n: tss.Node) => boolean
   return result;
 }
 
-const default_command = 'psql -c';
+const default_command = 'psql -U postgres -c';
 const default_tags = {
   sql: 'sql',
-  spreadAnd: 'spreadAnd',
-  spreadInsert: 'spreadInsert',
-  spreadUpdate: 'spreadUpdate',
+  and: 'and',
+  ins: 'ins',
+  upd: 'upd',
+  raw: 'raw',
 };
 
 export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
@@ -42,10 +44,11 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
 
   const config: TsSqlPluginConfig = { command: default_command, ...info.config, tags: { ...default_tags, ...(info.config || {}).tags } };
 
-  const spread = {
-    [config.tags.spreadAnd]: spreadAnd,
-    [config.tags.spreadInsert]: spreadInsert,
-    [config.tags.spreadUpdate]: spreadUpdate,
+  const fns = {
+    [config.tags.and]: sql.and,
+    [config.tags.ins]: sql.ins,
+    [config.tags.upd]: sql.upd,
+    [config.tags.raw]: sql.raw,
   };
 
   return new Proxy(info.languageService, {
@@ -71,7 +74,9 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               n.template.templateSpans.forEach(span => {
                 values.push(null);
                 if (tss.isCallExpression(span.expression)) {
-                  const fn = spread[span.expression.getFirstToken().getText()];
+                  logger(span.expression.getFirstToken().getText());
+                  logger(span.expression.getText());
+                  const fn = fns[span.expression.getFirstToken().getText()];
                   if (!!fn) {
                     const t = type_checker.getTypeAtLocation(span.expression.arguments[0]);
                     const fake = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
