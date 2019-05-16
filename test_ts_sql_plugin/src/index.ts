@@ -17,8 +17,8 @@ const typeDefs = gql(fs.readFileSync(path.join(__dirname, '../schema.gql'), 'utf
 const resolvers = {
   Book: {
     author: async (root, args, ctx) => {
-      return await pgp.one(sql`select * from books where id=${root.id} and ${sql.cond(true)`selctasfh ${123} ${new Date()}`} asf ${sql.cond`asfsafeqr`}`);
-    }
+      return await pgp.one(sql`select * from persons where id=${root.author_id}`);
+    },
   },
   Person: {
     books: async (root, args: skm.Person.books, ctx) => {
@@ -37,13 +37,32 @@ const resolvers = {
       //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and publisher=${args.publisher}`);
       // }
       // return await pgp.manyOrNone(sql`select * from books where author_id=${root._id};`);
-      let raw_obj = args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``;
-      return await pgp.manyOrNone(sql`select * from books where 1=1 and ${sql.and({author_id: root._id, publisher: args.publisher})} ${raw_obj}`)
-    }
+
+      // return await pgp.manyOrNone(sql`select * from books where ${sql.and({author_id: root._id, publisher: args.publisher})}${sql.cond(!!args.title_like)` and title like ${'%'+args.title_like+'%'}`}`);
+      // or
+      return await pgp.manyOrNone(sql`select * from books where ${sql.and({ author_id: root._id, publisher: args.publisher, 'title like': args.title_like ? `%${args.title_like}%` : undefined })}`);
+    },
   },
   Query: {
     books: async (root, args: skm.Query.books, ctx) => {
-      return await pgp.manyOrNone(sql`select * from books where 1=1`);
+      return await pgp.manyOrNone(
+        sql`select * from books${sql.cond(Object.entries(args).filter(([k, v]) => v).length > 0)` where ${sql.and({
+          author_id: args.author_id,
+          publisher: args.publisher,
+          'title like': args.title_like ? `%${args.title_like}%` : undefined,
+        })}`}`,
+      );
+    },
+    persons: async (root, args: skm.Query.persons, ctx) => {
+      return await pgp.manyOrNone(sql`select * from persons${sql.cond(!!args.name_like)` where name like ${`%${args.name_like}%`}`}`);
+    },
+  },
+  Mutation: {
+    add_person: async (root, args: skm.Mutation.add_person) => {
+      return await pgp.one(sql`insert into personns ${sql.ins({first_name: args.name})}`);
+    },
+    add_book: async (root, args: skm.Mutation.add_book) => {
+      return await pgp.one(sql`insert into books ${sql.ins(args)}`);
     },
   },
 };
@@ -56,13 +75,3 @@ const server = new ApolloServer({
 server.listen().then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`);
 });
-
-
-// const a = {
-//   "name.like": "xia"
-// }
-
-// const a = {
-//   name_like: 'xia'
-// }
-// const b = Object.entries(a).map(([k, v]) => [k.split('_').join('.'), v]).reduce((acc, cv) => ({...acc, [cv[0]]: cv[1]}), {})
