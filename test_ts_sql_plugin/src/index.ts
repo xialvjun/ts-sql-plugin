@@ -3,6 +3,7 @@ import path from 'path';
 
 import { ApolloServer, gql } from 'apollo-server';
 import pg_promise from 'pg-promise';
+
 import sql from '../../src/sql';
 
 import * as skm from './skm';
@@ -16,7 +17,7 @@ const typeDefs = gql(fs.readFileSync(path.join(__dirname, '../schema.gql'), 'utf
 const resolvers = {
   Book: {
     author: async (root, args, ctx) => {
-      return await pgp.one(sql`select * from books where id=${root.id}`);
+      return await pgp.one(sql`select * from books where id=${root.id} and ${sql.cond(true)`selctasfh ${123} ${new Date()}`} asf ${sql.cond`asfsafeqr`}`);
     }
   },
   Person: {

@@ -5,6 +5,7 @@
   "author": "xialvjun@live.com",
   "license": "MIT",
   "dependencies": {
+    "@hediet/typed-sql": "^0.2.12",
     "apollo-server": "^2.5.0",
     "graphql-date": "^1.0.3",
     "graphql-type-json": "^0.3.0",

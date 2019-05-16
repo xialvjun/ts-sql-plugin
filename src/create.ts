@@ -12,6 +12,7 @@ export interface TsSqlPluginConfig {
     ins: string;
     upd: string;
     raw: string;
+    cond: string;
   };
 }
 
@@ -36,6 +37,7 @@ const default_tags = {
   ins: 'ins',
   upd: 'upd',
   raw: 'raw',
+  cond: 'cond',
 };
 
 export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
@@ -48,7 +50,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
     [config.tags.and]: sql.and,
     [config.tags.ins]: sql.ins,
     [config.tags.upd]: sql.upd,
-    [config.tags.raw]: sql.raw,
+    // [config.tags.cond]: sql.cond,
   };
 
   return new Proxy(info.languageService, {
@@ -65,30 +67,108 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
           ) as any;
 
           const explain_rss = nodes.map(n => {
-            const texts: string[] = [];
+            const texts: string[] = [''];
             const values = [];
 
-            if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
-              texts.push(n.template.head.text);
-
-              n.template.templateSpans.forEach(span => {
-                values.push(null);
-                if (tss.isCallExpression(span.expression)) {
-                  const fn = fns[span.expression.expression.getLastToken().getText()];
-                  if (!!fn) {
-                    const t = type_checker.getTypeAtLocation(span.expression.arguments[0]);
-                    logger(t.getProperty(sql.symbol));
-                    const fake = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
-                    values.pop();
-                    values.push(fn(fake));
+            function make(n: tss.TaggedTemplateExpression) {
+              logger(n.getFullText());
+              if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
+                // texts.push(n.template.head.text);
+                texts[texts.length - 1] += n.template.head.text;
+                logger('texts.push(n.template.head.text);' + texts.join('----'));
+  
+                n.template.templateSpans.forEach(span => {
+                  values.push(null);
+                  let pushed = true;
+                  logger('values:null---' + values.length);
+                  if (tss.isCallLikeExpression(span.expression)) {
+                    // CallExpression | NewExpression | TaggedTemplateExpression | Decorator | JsxOpeningLikeElement
+                    // const kind_name = {
+                    //   [tss.SyntaxKind.CallExpression]: 'CallExpression',
+                    //   [tss.SyntaxKind.NewExpression]: 'NewExpression',
+                    //   [tss.SyntaxKind.TaggedTemplateExpression]: 'TaggedTemplateExpression',
+                    //   [tss.SyntaxKind.Decorator]: 'Decorator',
+                    // };
+                    // logger(`${kind_name[span.expression.kind]}: ${span.expression.getFullText()}`);
+                    if (tss.isCallExpression(span.expression)) {
+                      const fn = fns[span.expression.expression.getLastToken().getText()];
+                      if (!!fn) {
+                        const t = type_checker.getTypeAtLocation(span.expression.arguments[0]);
+                        const fake: object = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
+                        values.pop();
+                        logger('values:pop---' + values.length);
+                        values.push(fn(fake));
+                        logger('values:fake---' + values.length);
+                      }
+                    } else if (tss.isTaggedTemplateExpression(span.expression)) {
+                      logger('---------------' + span.expression.tag.getText());
+                      if (span.expression.tag.getText().match(new RegExp(config.tags.cond+'$|'+config.tags.cond+'\\(|'+config.tags.raw+'$'))) {
+                        logger('---------------match' + span.expression.tag.getText());
+                        values.pop();
+                        pushed = false;
+                        logger('values:pop---' + values.length);
+                        // sql.cond(true)(span.expression.template)
+                        // const m = make(span.expression);
+                        // texts[texts.length-1] += m.texts[0];
+                        // texts = [...texts, ...m.texts.slice(1)];
+                        // values = [...values, ...m.values];
+                        make(span.expression);
+                      }
+                    }
                   }
-                }
-
-                texts.push(span.literal.text);
-              });
-            } else if (n.template.kind === tss.SyntaxKind.NoSubstitutionTemplateLiteral) {
-              texts.push(n.template.text);
+                  if (pushed) {
+                    texts.push(span.literal.text);
+                  } else {
+                    texts[texts.length - 1] += span.literal.text;
+                  }
+                  
+                  logger('texts:literal---' + texts.length);
+                  logger(texts.join('----'));
+                });
+              } else if (n.template.kind === tss.SyntaxKind.NoSubstitutionTemplateLiteral) {
+                // texts.push(n.template.text);
+                texts[texts.length - 1] += n.template.text;
+                logger('texts:notemplate---' + texts.length);
+                logger(texts.join('----'));
+              }
+              return { texts, values };
             }
+            // const { texts, values } = make(n);
+            make(n);
+            logger(texts.length + ':::' + values.length);
+
+            // if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
+            //   texts.push(n.template.head.text);
+
+            //   n.template.templateSpans.forEach(span => {
+            //     values.push(null);
+            //     if (tss.isCallLikeExpression(span.expression)) {
+            //       // CallExpression | NewExpression | TaggedTemplateExpression | Decorator | JsxOpeningLikeElement
+            //       const kind_name = {
+            //         [tss.SyntaxKind.CallExpression]: 'CallExpression',
+            //         [tss.SyntaxKind.NewExpression]: 'NewExpression',
+            //         [tss.SyntaxKind.TaggedTemplateExpression]: 'TaggedTemplateExpression',
+            //         [tss.SyntaxKind.Decorator]: 'Decorator',
+            //       };
+            //       logger(`${kind_name[span.expression.kind]}: ${span.expression.getFullText()}`);
+            //       if (tss.isCallExpression(span.expression)) {
+            //         const fn = fns[span.expression.expression.getLastToken().getText()];
+            //         if (!!fn) {
+            //           const t = type_checker.getTypeAtLocation(span.expression.arguments[0]);
+            //           const fake = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
+            //           values.pop();
+            //           values.push(fn(fake));
+            //         }
+            //       } else if (tss.isTaggedTemplateExpression(span.expression)) {
+            //         logger('asdfsdasg'+span.expression.tag.kind+'');
+            //       }
+            //     }
+
+            //     texts.push(span.literal.text);
+            //   });
+            // } else if (n.template.kind === tss.SyntaxKind.NoSubstitutionTemplateLiteral) {
+            //   texts.push(n.template.text);
+            // }
 
             const diagnostic = {
               file: source_file,
@@ -100,6 +180,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               code: 0,
             };
             try {
+              logger(texts.join('---') + ':::::' + JSON.stringify(values));
               let query_config = sql((texts as unknown) as TemplateStringsArray, ...values);
               let s = query_config.text.replace(/\$\d+/g, 'null').replace(/'/g, "'");
               let buffer_rs = child_process.execSync(`${config.command} 'EXPLAIN ${s}'`);

@@ -26,6 +26,8 @@ const symbol = (sql.symbol = Symbol('sql'));
 
 sql.raw = raw;
 
+sql.cond = (condition: boolean) => condition ? raw : (...anything: any[]) => raw``;
+
 // const to_and = {m: undefined, n: undefined};
 // no first and
 // sql`select * from a where ${sql.and(to_and)}`
@@ -97,3 +99,57 @@ function escape_identifier(identifier: string) {
   }
   return `"${schema}"."${table}"."${column}" ${operator}`.replace(/""\./g, '');
 }
+
+
+
+// ? 有想过把所有数据都放在类型系统上, 这样 sql.raw`` 得到的结果就可以作为变量到处传递了, 不需要限制死在 sql`` 内部使用, 与运行时等同...但问题是 TemplateStringsArray 把字符串模板的 const 字符串信息丢失了, 这里只能 typescript 上游去解决, 这样在类型上根本无法得到 raw 里面的字符串, 至于从变量传递作用域上, 那结果就是完全不确定的
+// interface AAA<TSA, VS> {
+//   __texts: TSA;
+//   __values: VS;
+// }
+
+// function abc<TSA extends TemplateStringsArray, VS extends any[]>(texts: TSA, ...vs: VS): AAA<TSA, VS> {
+//   return {__texts: texts, __values: vs}
+// }
+
+// var a = abc`select * from ${123} and good ${new Date()} ${window}`;
+// // var a: AAA<['select * from ', ' and good ', ' ', ''], [number, Date, Window]>
+
+// enum ExpressionKind {
+//   RAW,
+//   SQL,
+//   AND,
+//   INS,
+//   UPD,
+// };
+
+// interface Expression {
+//   __kind__: ExpressionKind;
+//   text: string;
+//   values: any[];
+// }
+
+// interface RawExpression extends Expression {
+//   __kind__: ExpressionKind.RAW;
+// }
+
+// interface SqlExpression extends Expression {
+//   __kind__: ExpressionKind.SQL;
+// }
+
+// interface AndExpression extends Expression {
+//   __kind__: ExpressionKind.AND;
+// }
+
+// interface InsExpression extends Expression {
+//   __kind__: ExpressionKind.INS;
+// }
+
+// interface UpdExpression extends Expression {
+//   __kind__: ExpressionKind.UPD;
+// }
+
+// // raw: raw
+// // and: and<T>
+// // ins: ins<T>
+// // upd: upd<T>
