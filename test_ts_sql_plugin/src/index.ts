@@ -8,7 +8,7 @@ import sql from '../../src/sql';
 
 import * as skm from './skm';
 
-const pgp = pg_promise()(`postgres://username:password@127.0.0.1:32769/username`);
+const pgp = pg_promise()(`postgres://postgres:postgres@127.0.0.1:32769/postgres`);
 
 // The GraphQL schema
 const typeDefs = gql(fs.readFileSync(path.join(__dirname, '../schema.gql'), 'utf8'));
@@ -23,35 +23,48 @@ const resolvers = {
   Person: {
     books: async (root, args: skm.Person.books, ctx) => {
       // todo: we need a sql.raw``, then
-      // sql`select * from books where author_id=${root._id}${args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``}${args.publisher ? sql.raw` and publisher=${args.publisher}` : sql.raw``}`;
+      // sql`select * from books where author_id=${root.id}${args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``}${args.publisher ? sql.raw` and publisher=${args.publisher}` : sql.raw``}`;
       // or
-      // sql`seelct * from books where 1=1 and ${sql_and({author_id: root._id, publisher: args.publisher})}${args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``}`
+      // sql`seelct * from books where 1=1 and ${sql_and({author_id: root.id, publisher: args.publisher})}${args.title_like ? sql.raw` and title like ${'%'+args.title_like+'%'}` : sql.raw``}`
       // todo: rename spreadAnd spreadInsert spreadUpdate to sql, sql.and, sql.ins, sql.upd, sql.raw
       // if (args.title_like && args.publisher) {
-      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and title like ${'%'+args.title_like+'%'} and publisher=${args.publisher}`);
+      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root.id} and title like ${'%'+args.title_like+'%'} and publisher=${args.publisher}`);
       // }
       // if (args.title_like && !args.publisher) {
-      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and title like ${'%'+args.title_like+'%'}`);
+      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root.id} and title like ${'%'+args.title_like+'%'}`);
       // }
       // if (!args.title_like && args.publisher) {
-      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root._id} and publisher=${args.publisher}`);
+      //   return await pgp.manyOrNone(sql`select * from books where author_id=${root.id} and publisher=${args.publisher}`);
       // }
-      // return await pgp.manyOrNone(sql`select * from books where author_id=${root._id};`);
+      // return await pgp.manyOrNone(sql`select * from books where author_id=${root.id};`);
 
-      // return await pgp.manyOrNone(sql`select * from books where ${sql.and({author_id: root._id, publisher: args.publisher})}${sql.cond(!!args.title_like)` and title like ${'%'+args.title_like+'%'}`}`);
+      // return await pgp.manyOrNone(sql`select * from books where ${sql.and({author_id: root.id, publisher: args.publisher})}${sql.cond(!!args.title_like)` and title like ${'%'+args.title_like+'%'}`}`);
       // or
-      return await pgp.manyOrNone(sql`select * from books where ${sql.and({ author_id: root._id, publisher: args.publisher, 'title like': args.title_like ? `%${args.title_like}%` : undefined })}`);
+      return await pgp.manyOrNone(
+        sql`select * from books where ${sql.and({
+          author_id: root.id,
+          publisher: args.publisher,
+          'title like': args.title_like ? `%${args.title_like}%` : undefined,
+        })}`,
+      );
     },
   },
   Query: {
     books: async (root, args: skm.Query.books, ctx) => {
-      return await pgp.manyOrNone(
+      // ! when you pass extra fields in graphql, apollo will filter it, and make sure args=pick(req.body.variables, keyof skm.Query.books), and undefined is not transformed to null. That is:
+      // ! if query({variables:{author_id:'123',title_like:'456',publisher:'789',wrong_field_name:'1011'}}) =======> args is {author_id:'123',title_like:'456',publisher:'789'}
+      // ! if query({variables:{author_id:'123',title_like:'456'}}) =======> args is {author_id:'123',title_like:'456'} where publisher===undefined && publisher!==null
+      // ! That's really what we want
+      console.log(args);
+      let a = await pgp.manyOrNone(
         sql`select * from books${sql.cond(Object.entries(args).filter(([k, v]) => v).length > 0)` where ${sql.and({
           author_id: args.author_id,
           publisher: args.publisher,
           'title like': args.title_like ? `%${args.title_like}%` : undefined,
         })}`}`,
       );
+      console.log(a);
+      return a;
     },
     persons: async (root, args: skm.Query.persons, ctx) => {
       return await pgp.manyOrNone(sql`select * from persons${sql.cond(!!args.name_like)` where name like ${`%${args.name_like}%`}`}`);
@@ -59,7 +72,7 @@ const resolvers = {
   },
   Mutation: {
     add_person: async (root, args: skm.Mutation.add_person) => {
-      return await pgp.one(sql`insert into personns ${sql.ins({first_name: args.name})}`);
+      return await pgp.one(sql`insert into personns ${sql.ins({ first_name: args.name })}`);
     },
     add_book: async (root, args: skm.Mutation.add_book) => {
       return await pgp.one(sql`insert into books ${sql.ins(args)}`);

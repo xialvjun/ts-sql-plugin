@@ -9,7 +9,7 @@ export namespace Mutation {
 
   export interface add_book {
     author_id: string;
-    meta: object | null;
+    meta?: object;
     published_at: Date;
     publisher: Publisher;
     title: string;
@@ -24,8 +24,8 @@ export namespace Mutation {
 export namespace Person {
 
   export interface books {
-    publisher: Publisher | null;
-    title_like: string | null;
+    publisher?: Publisher;
+    title_like?: string;
   }
   
 }
@@ -33,13 +33,13 @@ export namespace Person {
 export namespace Query {
 
   export interface books {
-    author_id: string | null;
-    publisher: Publisher | null;
-    title_like: string | null;
+    author_id?: string;
+    publisher?: Publisher;
+    title_like?: string;
   }
   
   export interface persons {
-    name_like: string | null;
+    name_like?: string;
   }
   
 }

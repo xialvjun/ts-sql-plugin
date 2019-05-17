@@ -8,7 +8,7 @@ enum Publisher {
 }
 
 type Book {
-  _id: ID!
+  id: ID!
   title: String!
   publisher: Publisher!
   author: Person!
@@ -17,7 +17,7 @@ type Book {
 }
 
 type Person {
-  _id: ID!
+  id: ID!
   name: String!
   books(title_like: String, publisher: Publisher): [Book!]!
 }
