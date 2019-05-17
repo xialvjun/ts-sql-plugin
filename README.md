@@ -1,5 +1,5 @@
 # ts-sql-plugin
-TypeScript Language Service Plugin for SQL especially for github:andywer/squid, a SQL tagged template strings builder.
+TypeScript Language Service Plugin for SQL with a tagged template strings SQL builder. Inspired by [andywer/squid](https://github.com/andywer/squid)
 
 ![readme_0](./readme_0.gif)
 
