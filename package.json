@@ -16,6 +16,7 @@
     "watch": "tsc --watch -p ."
   },
   "author": "xialvjun@live.com",
+  "files": ["lib", "src", "types"],
   "license": "MIT",
   "repository": {
     "type": "git",
