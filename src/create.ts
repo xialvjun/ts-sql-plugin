@@ -71,16 +71,16 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
             const values = [];
 
             function make(n: tss.TaggedTemplateExpression) {
-              logger(n.getFullText());
+              // logger(n.getFullText());
               if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
                 // texts.push(n.template.head.text);
                 texts[texts.length - 1] += n.template.head.text;
-                logger('texts.push(n.template.head.text);' + texts.join('----'));
+                // logger('texts.push(n.template.head.text);' + texts.join('----'));
   
                 n.template.templateSpans.forEach(span => {
                   values.push(null);
                   let pushed = true;
-                  logger('values:null---' + values.length);
+                  // logger('values:null---' + values.length);
                   if (tss.isCallLikeExpression(span.expression)) {
                     // CallExpression | NewExpression | TaggedTemplateExpression | Decorator | JsxOpeningLikeElement
                     // const kind_name = {
@@ -96,17 +96,17 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                         const t = type_checker.getTypeAtLocation(span.expression.arguments[0]);
                         const fake: object = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
                         values.pop();
-                        logger('values:pop---' + values.length);
+                        // logger('values:pop---' + values.length);
                         values.push(fn(fake));
-                        logger('values:fake---' + values.length);
+                        // logger('values:fake---' + values.length);
                       }
                     } else if (tss.isTaggedTemplateExpression(span.expression)) {
-                      logger('---------------' + span.expression.tag.getText());
+                      // logger('---------------' + span.expression.tag.getText());
                       if (span.expression.tag.getText().match(new RegExp(config.tags.cond+'$|'+config.tags.cond+'\\(|'+config.tags.raw+'$'))) {
-                        logger('---------------match' + span.expression.tag.getText());
+                        // logger('---------------match' + span.expression.tag.getText());
                         values.pop();
                         pushed = false;
-                        logger('values:pop---' + values.length);
+                        // logger('values:pop---' + values.length);
                         // sql.cond(true)(span.expression.template)
                         // const m = make(span.expression);
                         // texts[texts.length-1] += m.texts[0];
@@ -122,20 +122,20 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                     texts[texts.length - 1] += span.literal.text;
                   }
                   
-                  logger('texts:literal---' + texts.length);
-                  logger(texts.join('----'));
+                  // logger('texts:literal---' + texts.length);
+                  // logger(texts.join('----'));
                 });
               } else if (n.template.kind === tss.SyntaxKind.NoSubstitutionTemplateLiteral) {
                 // texts.push(n.template.text);
                 texts[texts.length - 1] += n.template.text;
-                logger('texts:notemplate---' + texts.length);
-                logger(texts.join('----'));
+                // logger('texts:notemplate---' + texts.length);
+                // logger(texts.join('----'));
               }
               return { texts, values };
             }
             // const { texts, values } = make(n);
             make(n);
-            logger(texts.length + ':::' + values.length);
+            // logger(texts.length + ':::' + values.length);
 
             // if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
             //   texts.push(n.template.head.text);
@@ -180,7 +180,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               code: 0,
             };
             try {
-              logger(texts.join('---') + ':::::' + JSON.stringify(values));
+              // logger(texts.join('---') + ':::::' + JSON.stringify(values));
               let query_config = sql((texts as unknown) as TemplateStringsArray, ...values);
               let s = query_config.text.replace(/\$\d+/g, 'null').replace(/'/g, "'");
               let buffer_rs = child_process.execSync(`${config.command} 'EXPLAIN ${s}'`);

@@ -40,7 +40,7 @@ const resolvers = {
 
       // return await pgp.manyOrNone(sql`select * from books where ${sql.and({author_id: root.id, publisher: args.publisher})}${sql.cond(!!args.title_like)` and title like ${'%'+args.title_like+'%'}`}`);
       // or
-      return await pgp.manyOrNone(
+      return await pgp.any(
         sql`select * from books where ${sql.and({
           author_id: root.id,
           publisher: args.publisher,
@@ -56,7 +56,7 @@ const resolvers = {
       // ! if query({variables:{author_id:'123',title_like:'456'}}) =======> args is {author_id:'123',title_like:'456'} where publisher===undefined && publisher!==null
       // ! That's really what we want
       console.log(args);
-      let a = await pgp.manyOrNone(
+      let a = await pgp.any(
         sql`select * from books${sql.cond(Object.entries(args).filter(([k, v]) => v).length > 0)` where ${sql.and({
           author_id: args.author_id,
           publisher: args.publisher,
@@ -67,15 +67,15 @@ const resolvers = {
       return a;
     },
     persons: async (root, args: skm.Query.persons, ctx) => {
-      return await pgp.manyOrNone(sql`select * from persons${sql.cond(!!args.name_like)` where name like ${`%${args.name_like}%`}`}`);
+      return await pgp.any(sql`select * from persons${sql.cond(!!args.name_like)` where name like ${`%${args.name_like}%`}`}`);
     },
   },
   Mutation: {
     add_person: async (root, args: skm.Mutation.add_person) => {
-      return await pgp.one(sql`insert into personns ${sql.ins({ first_name: args.name })}`);
+      return await pgp.one(sql`insert into personns ${sql.ins({ first_name: args.name })} returning *`);
     },
     add_book: async (root, args: skm.Mutation.add_book) => {
-      return await pgp.one(sql`insert into books ${sql.ins(args)}`);
+      return await pgp.one(sql`insert into books ${sql.ins(args)} returning *`);
     },
   },
 };
