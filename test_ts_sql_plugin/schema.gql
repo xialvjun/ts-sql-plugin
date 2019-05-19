@@ -23,7 +23,7 @@ type Person {
 }
 
 type Query {
-  books(author_id: ID, title_like: String, publisher: Publisher): [Book!]!
+  books(author_id: ID, title_like: String, publisher: Publisher, reverse: Boolean): [Book!]!
   persons(name_like: String): [Person!]!
 }
 

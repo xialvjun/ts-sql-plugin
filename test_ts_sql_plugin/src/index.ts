@@ -61,7 +61,7 @@ const resolvers = {
           author_id: args.author_id,
           publisher: args.publisher,
           'title like': args.title_like ? `%${args.title_like}%` : undefined,
-        })}`}`,
+        })}`} order by published_at ${args.reverse ? sql.raw`desc` : sql.raw`asc`}`,
       );
       console.log(a);
       return a;

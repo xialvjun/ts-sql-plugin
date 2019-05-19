@@ -43,6 +43,8 @@ corner. Otherwise, VS Code will not be able to find your plugin. See https://git
 
 Then in your code:
 
+<span style="color:red;">In the code below, some of the table names or column names are intentionally wrong.</span> `ts-sql-plugin` will show you the errors.
+
 ```ts
 import sql from 'ts-sql-plugin/lib/sql';
 
@@ -56,11 +58,14 @@ db.query(sql`select * from person where ${sql.and({ wrong_column_name: value, na
 // sql.ins
 db.query(sql`insert into person ${sql.ins({ id: uuid(), name: name, ageeee: wrong_column_name_value })}`);
 
-// sql.ins
+// sql.upd
 db.query(sql`update person set ${sql.upd({ wrong_name_column: name, age: 23 })} where id=${id}`);
 
-// operator
+// like, >, < etc
 db.query(sql`select * from person where ${sql.and({ 'name like': '%'+name_like+'%', 'ageee >': age_bigger_than })}`);
+
+// sql.raw with ?: operator
+db.query(sql`select * from person order by age ${reverse ? sql.raw`desc` : sql.raw`asc`}`);
 
 // sql.cond
 db.query(sql`select * from person where name=${name} ${sql.cond(!!age_bigger_than)` and ageeee > ${age_bigger_than}`}`);
