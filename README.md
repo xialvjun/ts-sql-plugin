@@ -70,6 +70,9 @@ db.query(sql`select * from person order by age ${reverse ? sql.raw`desc` : sql.r
 // sql.cond
 db.query(sql`select * from person where name=${name} ${sql.cond(!!age_bigger_than)` and ageeee > ${age_bigger_than}`}`);
 
+// ! where in will produce error because of node-postgres doesn't support it. use where column=any()
+db.query(sql`select * from person where id in (${[uuid(), uuid()]})`);
+db.query(sql`select * from person where id = any(${[uuid(), uuid()]})`);
 ```
 
 **And there is a complete example using [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) and [skm_ts](https://github.com/xialvjun/skm_ts) in folder test_ts_sql_plugin.**

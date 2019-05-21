@@ -94,6 +94,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               const fn = fns[n.expression.getLastToken().getText()];
               if (!!fn) {
                 const t = type_checker.getTypeAtLocation(n.arguments[0]);
+                // todo: don't know how to get T in Array<T> with type_checker
                 const fake: object = t.getProperties().reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
                 return fn(fake);
               }
@@ -113,7 +114,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                 }
                 if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
                   const texts = [n.template.head.text, ...n.template.templateSpans.map(span => span.literal.text)] as unknown as TemplateStringsArray;
-                  logger(JSON.stringify(texts));
+                  // logger(JSON.stringify(texts));
                   let values = n.template.templateSpans.map(span => fake_expression(span.expression)).map(v => is_array(v) ? deep_flatten(v) : [v]);
                   let all_values = values.reduce((acc, cv) => {
                     return cv.map(v => acc.map(ac => ac.concat(v))).reduce((acc, cv) => acc.concat(cv), []);
@@ -143,9 +144,9 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               let query_configs = fake_expression(n, true);
               
               query_configs.map(qc => {
-                logger(qc.text);
-                let s = qc.text.replace(/\?\?/gm, 'null').replace(/'/g, "\'");
-                let buffer_rs = child_process.execSync(`${config.command} 'EXPLAIN ${s}'`);
+                // logger(qc.text);
+                let s = qc.text.replace(/\?\?/gm, 'null').replace(/'/g, "\\'");
+                let buffer_rs = child_process.execSync(`${config.command} $'EXPLAIN ${s}'`);
                 // let messageText = buffer_rs.toString('utf8');
                 return null;
               });
