@@ -110,7 +110,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                 // if (tss.isTemplateExpression(n)) {
                 // }
                 if (n.template.kind === tss.SyntaxKind.NoSubstitutionTemplateLiteral) {
-                  return fn([n.template.text] as unknown as TemplateStringsArray)
+                  return [fn([n.template.text] as unknown as TemplateStringsArray)]
                 }
                 if (n.template.kind === tss.SyntaxKind.TemplateExpression) {
                   const texts = [n.template.head.text, ...n.template.templateSpans.map(span => span.literal.text)] as unknown as TemplateStringsArray;
