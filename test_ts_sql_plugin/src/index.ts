@@ -4,7 +4,7 @@ import path from 'path';
 import { ApolloServer, gql } from 'apollo-server';
 import pg_promise from 'pg-promise';
 
-import sql from '../../src/sql';
+import sql from 'ts-sql-plugin/lib/sql';
 
 import * as skm from './skm';
 
@@ -17,7 +17,7 @@ const typeDefs = gql(fs.readFileSync(path.join(__dirname, '../schema.gql'), 'utf
 const resolvers = {
   Book: {
     author: async (root, args, ctx) => {
-      return await pgp.one(sql`select * from persons where id=${root.author_id}`);
+      return await pgp.one(sql`select * from persoiins where id=${root.author_id}`);
     },
   },
   Person: {

@@ -58,8 +58,8 @@
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
     "plugins": [
       {
-      "name": "../../../lib",
-      "command": "docker exec practical_heyrovsky psql -U postgres -c"
+      "name": "ts-sql-plugin",
+      "command": "docker exec 6b8204b88af5 psql -U postgres -c"
       }
     ]
   },

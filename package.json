@@ -1,6 +1,6 @@
 {
   "name": "ts-sql-plugin",
-  "version": "0.2.7",
+  "version": "0.3.2",
   "description": "TypeScript Language Service Plugin for SQL with a tagged template strings SQL builder.",
   "keywords": [
     "typescript",
@@ -8,6 +8,7 @@
     "sql"
   ],
   "main": "lib/index.js",
+  "bin": "lib/cli.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
@@ -15,7 +16,10 @@
     "watch": "tsc --watch -p ."
   },
   "author": "xialvjun@live.com",
-  "files": ["lib", "src"],
+  "files": [
+    "lib",
+    "src"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -28,5 +32,8 @@
   },
   "peerDependencies": {
     "typescript": "^3.0.0"
+  },
+  "dependencies": {
+    "commander": "^3.0.2"
   }
 }

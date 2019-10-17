@@ -4,12 +4,16 @@
   "main": "lib/index.js",
   "author": "xialvjun@live.com",
   "license": "MIT",
+  "scripts": {
+    "lint_sql": "ts-sql-plugin -c 'docker exec 6b8204b88af5 psql -U postgres -c'"
+  },
   "dependencies": {
     "apollo-server": "^2.5.0",
     "graphql": "^14.3.0",
     "graphql-date": "^1.0.3",
     "graphql-type-json": "^0.3.0",
     "pg-promise": "^8.7.2",
+    "ts-sql-plugin": "^0.3.2",
     "typescript": "^3.4.5",
     "uuid": "^3.3.2"
   }

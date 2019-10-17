@@ -5,6 +5,8 @@ TypeScript Language Service Plugin for SQL with a tagged template strings SQL bu
 
 # Usage
 
+## run as a language service plugin
+
 Install the plugin, run:
 
 ```sh
@@ -41,7 +43,21 @@ path to the module, or run the "TypeScript: Select TypeScript Version" command a
 Workspace Version", or click the version number between "TypeScript" and 😃 in the lower-right
 corner. Otherwise, VS Code will not be able to find your plugin. See https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin#testing-locally
 
-Then in your code:
+## run as a command line application
+
+Install the plugin, run:
+
+```sh
+npm install ts-sql-plugin -g
+```
+
+Then run:
+
+```sh
+ts-sql-plugin -p ./your_project_path -c 'psql -U postgres -c'
+```
+
+# Then in your code:
 
 <span style="color:red;">In the code below, some of the table names or column names are intentionally wrong.</span> `ts-sql-plugin` will show you the errors.
 
