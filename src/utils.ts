@@ -75,7 +75,7 @@ export function report(
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(
     node.getStart(),
   );
-  console.log(
-    `${sourceFile.fileName} (${line + 1},${character + 1}): ${message}`,
+  console.error(
+    `${sourceFile.fileName} (${line + 1},${character + 1}): ${message}\n\n`,
   );
 }

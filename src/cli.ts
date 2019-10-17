@@ -66,11 +66,17 @@ const fake_expression = make_fake_expression(
   config.tags,
 );
 
+let has_error = false;
+
 program.getSourceFiles().forEach(f => {
   if (!exclude.test(f.fileName)) {
     delint(f);
   }
 });
+
+if (has_error) {
+  throw has_error;
+}
 
 function delint(sourceFile: ts.SourceFile) {
   delintNode(sourceFile);
@@ -90,6 +96,7 @@ function delint(sourceFile: ts.SourceFile) {
             // return null;
           });
         } catch (error) {
+          has_error = true;
           report(sourceFile, n, '');
         }
       }
