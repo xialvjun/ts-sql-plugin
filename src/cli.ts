@@ -90,7 +90,7 @@ function delint(sourceFile: ts.SourceFile) {
           query_configs.map((qc: any) => {
             let s = qc.text.replace(/\?\?/gm, 'null').replace(/'/g, "\\'");
             let buffer_rs = child_process.execSync(
-              `${config.command} $'EXPLAIN ${s}'`,
+              `${config.command} 'EXPLAIN ${s}'`,
             );
             // let messageText = buffer_rs.toString('utf8');
             // return null;
