@@ -1162,10 +1162,10 @@ ts-invariant@^0.3.2:
   dependencies:
     tslib "^1.9.3"
 
-ts-sql-plugin@^0.3.5:
-  version "0.3.5"
-  resolved "https://registry.yarnpkg.com/ts-sql-plugin/-/ts-sql-plugin-0.3.5.tgz#4cb89610d8dd0a578ff9ab33b5c84482e727478e"
-  integrity sha512-08poqMp8y7deN6nQKVYPfEZiNOV+u0aZTe+9DWXcXSUIXQFQOaKm0eqZCE/Y4dMkSSwMASJobvyyYjXIToAVkA==
+ts-sql-plugin@^0.3.6:
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/ts-sql-plugin/-/ts-sql-plugin-0.3.6.tgz#2cf65798634ed4252ad99b61ec4a92588a7636ee"
+  integrity sha512-ISoxWM40MCD/dbk1agEZzYRkD7r6iamCIYvAurUXuotHXyxBUD/enjKzHHT8ZPDgFe+jss8QVE14+SdKvl/Bpg==
   dependencies:
     commander "^3.0.2"
 
