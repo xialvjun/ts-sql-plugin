@@ -3,6 +3,8 @@ import * as path from 'path';
 
 import ts from 'typescript';
 
+import { Tags } from './make_fake_expression';
+
 export const is_array = (obj: any) =>
   Object.prototype.toString.call(obj) === '[object Array]';
 
@@ -35,9 +37,10 @@ export const find_all_nodes = (
 
 export const default_command = 'psql -U postgres -c';
 
-export const default_tags = {
+export const default_tags: Tags = {
   sql: 'sql',
   and: 'and',
+  or: 'or',
   ins: 'ins',
   upd: 'upd',
   raw: 'raw',

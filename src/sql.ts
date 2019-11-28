@@ -52,6 +52,14 @@ sql.and = (obj: object) => {
   return { [symbol]: true, text, values };
 };
 
+sql.or = <T extends any[]>(objs: T) => {
+  return objs.map(obj => sql.and(obj)).reduce((acc, cv, idx) => {
+    acc.text += `${idx === 0 ? '' : ' OR'} (${cv.text})`;
+    acc.values = acc.values.concat(cv.values);
+    return acc;
+  }, { [symbol]: true, text: '', values: [] });
+};
+
 sql.ins = (obj_or_objs: object | object[]) => {
   let objs = [].concat(obj_or_objs);
   let keys = Object.keys(Object.assign({}, ...objs)).sort();

@@ -7,6 +7,7 @@ import { is_array, deep_flatten } from './utils';
 export interface Tags {
   sql: string;
   and: string;
+  or: string;
   ins: string;
   upd: string;
   raw: string;
@@ -21,6 +22,7 @@ export const make_fake_expression = (
     [tags.and]: sql.and,
     [tags.ins]: sql.ins,
     [tags.upd]: sql.upd,
+    [tags.or]: sql.or,
   };
   const tag_regex = new RegExp(
     '^' + tags.sql + '$|' + tags.raw + '$|' + tags.cond + '\\(',
@@ -33,17 +35,28 @@ export const make_fake_expression = (
       const fn = fns[n.expression.getLastToken().getText()];
       if (!!fn) {
         const t = type_checker.getTypeAtLocation(n.arguments[0]);
-        // todo: don't know how to get T in Array<T> with type_checker
-        const fake: object = t
-          .getProperties()
-          .reduce(
-            (acc, cv) => Object.assign(acc, { [cv.getName()]: null }),
-            {},
-          );
+        let fake: any = null;
+        if (fn == sql.and || fn == sql.upd || fn == sql.ins) {
+          const ut = t.getNumberIndexType() as ts.UnionType;
+          if (fn == sql.ins && !!ut) {
+            if (!!ut.types) {
+              fake = ut.types.map(t => object_type_to_fake(t));
+            } else {
+              fake = object_type_to_fake(ut);
+            }
+          } else {
+            fake = object_type_to_fake(t);
+          }
+        }
+        if (fn == sql.or) {
+          const ut = t.getNumberIndexType() as ts.UnionType;
+          fake = ut.types.map(t => object_type_to_fake(t));
+        }
         return fn(fake);
       }
     }
     if (ts.isTaggedTemplateExpression(n)) {
+      // 因为又 sql.cond(boolean)`` 所以不能直接 n.tag.getText() === tags.xxx
       if (tag_regex.test(n.tag.getText())) {
         const fn = sql.raw;
         if (n.template.kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral) {
@@ -91,4 +104,24 @@ export const make_fake_expression = (
     }
     return null;
   }
+};
+
+// function isTypeReference(type: ts.Type): type is ts.TypeReference {
+//   return !!(
+//     type.getFlags() & ts.TypeFlags.Object &&
+//     (type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference
+//   );
+// }
+
+// function isArrayType(type: ts.Type): boolean {
+//   return isTypeReference(type) && (
+//     type.target.symbol.name === "Array" ||
+//     type.target.symbol.name === "ReadonlyArray"
+//   );
+// }
+
+const object_type_to_fake = (t: ts.Type) => {
+  return t
+    .getProperties()
+    .reduce((acc, cv) => Object.assign(acc, { [cv.getName()]: null }), {});
 };

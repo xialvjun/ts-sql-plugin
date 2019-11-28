@@ -88,3 +88,7 @@ const server = new ApolloServer({
 server.listen().then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`);
 });
+
+// test sql.ins([obj_array]) and sql.or
+let a = sql`insert into books ${sql.ins([{title:'xia', publisher:28}, {title:'lv',meta:90}])}`;
+a = sql`select * from books where ${sql.or([{title: 'xia'}, {publisher: 28}, {title:'xialvjun', meta: 30}])}`;
