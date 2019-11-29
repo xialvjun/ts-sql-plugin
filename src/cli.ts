@@ -12,6 +12,7 @@ import {
   default_tags,
   get_all_ts_files,
   report,
+  index_of_array,
 } from './utils';
 import { make_fake_expression } from './make_fake_expression';
 
@@ -23,85 +24,108 @@ commander
     'node_modules',
   )
   .option(
-    '-c, --command <string>',
-    'The command be run to explain the faked sql.',
-    default_command,
-  )
-  .option(
     '-t, --tags <string>',
     'The tags you used in you ts file.',
     Object.entries(default_tags)
       .map(it => it.join('='))
       .join(','),
-  );
-
-commander.parse(process.argv);
-
-const config = commander.opts();
-config.tags = Object.assign(
-  {},
-  default_tags,
-  config.tags
-    .split(',')
-    .map(s => s.split('='))
-    .reduce((acc, [k, v]) => {
-      acc[k] = v;
-      return acc;
-    }, {}),
-);
-const exclude = new RegExp(config.exclude);
-
-const project_path = path.dirname(config.project);
-const tsconfig_path = path.join(project_path, 'tsconfig.json');
-
-const { config: tsconfig } = ts.parseConfigFileTextToJson(
-  tsconfig_path,
-  fs.readFileSync(tsconfig_path, { encoding: 'utf8' }),
-);
-
-const program = ts.createProgram(get_all_ts_files(project_path), tsconfig);
-
-const fake_expression = make_fake_expression(
-  program.getTypeChecker(),
-  config.tags,
-);
-
-let has_error = false;
-
-program.getSourceFiles().forEach(f => {
-  if (!exclude.test(f.fileName)) {
-    delint(f);
-  }
-});
-
-if (has_error) {
-  throw has_error;
-}
-
-function delint(sourceFile: ts.SourceFile) {
-  delintNode(sourceFile);
-
-  function delintNode(node: ts.Node) {
-    if (node.kind === ts.SyntaxKind.TaggedTemplateExpression) {
-      let n = node as ts.TaggedTemplateExpression;
-      if (n.tag.getText() === config.tags.sql) {
-        try {
-          let query_configs = fake_expression(n);
-          query_configs.map((qc: any) => {
-            let s = qc.text.replace(/\?\?/gm, 'null').replace(/'/g, "\\'");
-            let buffer_rs = child_process.execSync(
-              `${config.command} 'EXPLAIN ${s}'`,
-            );
-            // let messageText = buffer_rs.toString('utf8');
-            // return null;
-          });
-        } catch (error) {
-          has_error = true;
-          report(sourceFile, n, '');
-        }
-      }
+  )
+  .arguments('[command...]')
+  .description(
+    'Explain all your sqls in your code to test them. Eg: ts-sql-plugin -p ./my_ts_projet psql -c',
+    {
+      command: 'The command to be run to explain the faked sql, like: psql.',
+      args:
+        'The arguments passed to the command, like: -c. The faked sql will be added as the last argument.',
+    },
+  )
+  .action((_command) => {
+    if (_command.length === 0) {
+      _command = default_command;
+    } else {
+      _command = commander.rawArgs.slice(
+        index_of_array(commander.rawArgs, _command),
+      );
     }
 
-    ts.forEachChild(node, delintNode);
-  }
-}
+    const config = commander.opts();
+    config.tags = Object.assign(
+      {},
+      default_tags,
+      config.tags
+        .split(',')
+        .map(s => s.split('='))
+        .reduce((acc, [k, v]) => {
+          acc[k] = v;
+          return acc;
+        }, {}),
+    );
+    const exclude = new RegExp(config.exclude);
+
+    const project_path = path.dirname(config.project);
+    const tsconfig_path = path.join(project_path, 'tsconfig.json');
+
+    const { config: tsconfig } = ts.parseConfigFileTextToJson(
+      tsconfig_path,
+      fs.readFileSync(tsconfig_path, { encoding: 'utf8' }),
+    );
+
+    const program = ts.createProgram(get_all_ts_files(project_path), tsconfig);
+
+    const fake_expression = make_fake_expression(
+      program.getTypeChecker(),
+      config.tags,
+    );
+
+    let has_error = false;
+
+    program.getSourceFiles().forEach(f => {
+      if (!exclude.test(f.fileName)) {
+        delint(f);
+      }
+    });
+
+    if (has_error) {
+      throw new Error('Your code can not pass all sql test!!!');
+    }
+
+    function delint(sourceFile: ts.SourceFile) {
+      delintNode(sourceFile);
+
+      function delintNode(node: ts.Node) {
+        if (node.kind === ts.SyntaxKind.TaggedTemplateExpression) {
+          let n = node as ts.TaggedTemplateExpression;
+          if (n.tag.getText() === config.tags.sql) {
+            let query_configs = fake_expression(n);
+            for (const qc of query_configs) {
+              let s = qc.text.replace(/\?\?/gm, 'null');
+              let p = child_process.spawnSync(
+                _command[0],
+                _command.slice(1).concat(`EXPLAIN ${s}`),
+              );
+              if (p.status) {
+                has_error = true;
+                report(sourceFile, node, (p.stderr.toString as any)('utf8'));
+                break;
+              }
+            }
+            // query_configs.map((qc: any) => {
+            //   let s = qc.text.replace(/\?\?/gm, 'null');
+            //   let p = child_process.spawnSync(
+            //     _command,
+            //     _args.concat(`EXPLAIN ${s}`),
+            //   );
+            //   if (p.status) {
+            //     has_error = true;
+            //     report(sourceFile, node, (p.stderr.toString as any)('utf8'));
+            //   }
+            // });
+          }
+        }
+
+        ts.forEachChild(node, delintNode);
+      }
+    }
+  });
+
+commander.parse(process.argv);

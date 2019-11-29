@@ -9,7 +9,8 @@
       "request": "launch",
       "name": "Launch Program",
       "program": "${workspaceFolder}/lib/cli.js",
-      "args": ["-p", "test_ts_sql_plugin/", "-c", "docker exec 6b8204b88af5 psql -U postgres -c"],
+      // "args": ["-p", "test_ts_sql_plugin/", "-c", "docker exec 6b8204b88af5 psql -U postgres -c"],
+      "args": ["-p", "test_ts_sql_plugin/", "docker", "exec", "6b8204b88af5", "psql", "-U", "postgres", "-c"],
       "outFiles": [
         "${workspaceFolder}/**/*.js"
       ]

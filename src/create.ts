@@ -7,7 +7,7 @@ import { find_all_nodes, default_command, default_tags } from './utils';
 import { make_fake_expression, Tags } from './make_fake_expression';
 
 export interface TsSqlPluginConfig {
-  command: string;
+  command: string[];
   tags: Tags;
 }
 
@@ -54,29 +54,26 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               file: source_file,
               start: n.getStart(),
               length: n.getEnd() - n.getStart(),
-              source: 'pgsql',
+              source: 'ts-sql-plugin',
               code,
               category,
               messageText,
             });
-            try {
-              // one sql`select * from person ${xxx ? sql.raw`aaa` : sql.raw`bbb`}` may generate two sqls, need to be explained one by one
-              let query_configs = fake_expression(n);
-              query_configs.map((qc: any) => {
-                let s = qc.text.replace(/\?\?/gm, 'null').replace(/'/g, "\\'");
-                let buffer_rs = child_process.execSync(
-                  `${config.command} $'EXPLAIN ${s}'`,
-                );
-                // let messageText = buffer_rs.toString('utf8');
-                return null;
-              });
-              return null;
-            } catch (error) {
-              return make_diagnostic(
-                1,
-                tss.DiagnosticCategory.Error,
-                error.message,
+            // one sql`select * from person ${xxx ? sql.raw`aaa` : sql.raw`bbb`}` may generate two sqls, need to be explained one by one
+            let query_configs = fake_expression(n);
+            for (const qc of query_configs) {
+              let s = qc.text.replace(/\?\?/gm, 'null');
+              let p = child_process.spawnSync(
+                config.command[0],
+                config.command.slice(1).concat(`EXPLAIN ${s}`),
               );
+              if (p.status) {
+                return make_diagnostic(
+                  1,
+                  tss.DiagnosticCategory.Error,
+                  (p.stderr.toString as any)('utf8'),
+                );
+              }
             }
           });
           return [...origin_diagnostics, ...explain_rss.filter(v => !!v)];

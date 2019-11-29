@@ -35,7 +35,7 @@ export const find_all_nodes = (
   return result;
 };
 
-export const default_command = 'psql -U postgres -c';
+export const default_command = ['psql', '-c'] as const;
 
 export const default_tags: Tags = {
   sql: 'sql',
@@ -81,4 +81,16 @@ export function report(
   console.error(
     `${sourceFile.fileName} (${line + 1},${character + 1}): ${message}\n\n`,
   );
+}
+
+export function index_of_array(parent: any[], child: any[]) {
+  I: for (let i = 0; i < parent.length; i++) {
+    J: for (let j = 0; j < child.length; j++) {
+      if (parent[i+j] !== child[j]) {
+        continue I;
+      }
+    }
+    return i;
+  }
+  return -1
 }

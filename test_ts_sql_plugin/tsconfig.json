@@ -59,7 +59,7 @@
     "plugins": [
       {
       "name": "ts-sql-plugin",
-      "command": "docker exec 6b8204b88af5 psql -U postgres -c"
+      "command": ["docker", "exec", "6b8204b88af5", "psql", "-U", "postgres", "-c"],
       }
     ]
   },

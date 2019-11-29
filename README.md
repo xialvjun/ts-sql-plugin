@@ -23,10 +23,11 @@ Then, configure the `plugins` section in your *tsconfig.json*:
     "plugins": [
       {
         "name": "ts-sql-plugin",
-        "command": "psql -U postgres -c", // optionnal
+        "command": ["psql", "-c"], // optionnal
         "tags": { // optionnal
           "sql": "sql",
           "and": "and",
+          "or": "or",
           "ins": "ins",
           "upd": "upd",
           "raw": "raw",
@@ -54,7 +55,7 @@ npm install ts-sql-plugin -g
 Then run:
 
 ```sh
-ts-sql-plugin -p ./your_project_path -c 'psql -U postgres -c'
+ts-sql-plugin -p ./my_ts_project psql -U postgres -c
 ```
 
 # Then in your code:
@@ -71,8 +72,13 @@ db.query(sql`select * from wrong_table_name where wrong_column_name=${name}`);
 // sql.and
 db.query(sql`select * from person where ${sql.and({ wrong_column_name: value, name: name })}`);
 
+// sql.or
+db.query(sql`select * from person where ${sql.or([{ 'name like': 'abc%', age: 23 }, { 'age >': 23 }])}`);
+db.query(sql`select * from person where (name like ${'abc%'} and age=${23}) or age > ${23}`);
+
 // sql.ins
 db.query(sql`insert into person ${sql.ins({ id: uuid(), name: name, ageeee: wrong_column_name_value })}`);
+db.query(sql`insert into person ${sql.ins([{ id: uuid(), name, age: 23 }, {id, name:'ppp', age:30}])}`);
 
 // sql.upd
 db.query(sql`update person set ${sql.upd({ wrong_name_column: name, age: 23 })} where id=${id}`);

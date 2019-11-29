@@ -91,4 +91,6 @@ server.listen().then(({ url }) => {
 
 // test sql.ins([obj_array]) and sql.or
 let a = sql`insert into books ${sql.ins([{title:'xia', publisher:28}, {title:'lv',meta:90}])}`;
-a = sql`select * from books where ${sql.or([{title: 'xia'}, {publisher: 28}, {title:'xialvjun', meta: 30}])}`;
+a = sql`select * from books where ${sql.or([{title: 'xia'}, {publisher: 28}, {'title like':'xialvjun%', meta: 30}])}`;
+a = sql`select * from books where ${sql.or([{'title like': 'xxx%'}, {title: 'yyy'}])}`;
+a = sql`select * from books where title like 'xxx%'`;
