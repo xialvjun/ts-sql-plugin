@@ -94,3 +94,5 @@ let a = sql`insert into books ${sql.ins([{title:'xia', publisher:28}, {title:'lv
 a = sql`select * from books where ${sql.or([{title: 'xia'}, {publisher: 28}, {'title like':'xialvjun%', meta: 30}])}`;
 a = sql`select * from books where ${sql.or([{'title like': 'xxx%'}, {title: 'yyy'}])}`;
 a = sql`select * from books where title like 'xxx%'`;
+const get_titles = () => ['abc', 'def'];
+a = sql`select * from books where title = any(${get_titles()})`;

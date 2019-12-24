@@ -32,7 +32,7 @@ export const make_fake_expression = (
   // ! fake raw``,and(),ins(),upd(),?: and other expression. sql`` is just a special kind of raw``.
   function fake_expression(n: ts.Expression) {
     if (ts.isCallExpression(n)) {
-      const fn = fns[n.expression.getLastToken().getText()];
+      const fn = fns[(n.expression.getLastToken() || n.expression).getText()];
       if (!!fn) {
         const t = type_checker.getTypeAtLocation(n.arguments[0]);
         let fake: any = null;
