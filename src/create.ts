@@ -7,6 +7,7 @@ import { find_all_nodes, default_command, default_tags } from './utils';
 import { make_fake_expression, Tags } from './make_fake_expression';
 
 export interface TsSqlPluginConfig {
+  options: {maxExplainCost?: number}
   command: string[];
   tags: Tags;
 }
@@ -67,6 +68,18 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                 config.command[0],
                 config.command.slice(1).concat(`EXPLAIN ${s}`),
               );
+
+              if(config.options.maxExplainCost){
+                const [{}, max] = (p.stdout.toString as any)('utf8').match(/\(cost=.+\.\.([\d]+\.[\d]+)/);
+                if(max && Number(max) && Number(max) > config.options.maxExplainCost){
+                  return make_diagnostic(
+                    1,
+                    tss.DiagnosticCategory.Error,
+                    `explain cost is too high: ${max}`
+                  );
+                }
+              }
+
               if (p.status) {
                 return make_diagnostic(
                   1,

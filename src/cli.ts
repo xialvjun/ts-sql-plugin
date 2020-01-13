@@ -32,7 +32,7 @@ commander
   )
   .option(
     '-m, --max-cost <int>',
-    'throw error if explain cost transgress this ',
+    'throw error if explain cost exceeds treshold ',
     null,
   )
   .arguments('[command...]')
