@@ -7,7 +7,8 @@ import { find_all_nodes, default_command, default_tags } from './utils';
 import { make_fake_expression, Tags } from './make_fake_expression';
 
 export interface TsSqlPluginConfig {
-  options: {maxExplainCost?: number}
+  maxExplainCost?: number;
+  showExplain?: boolean;
   command: string[];
   tags: Tags;
 }
@@ -15,7 +16,6 @@ export interface TsSqlPluginConfig {
 export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
   const logger = (msg: string) =>
     info.project.projectService.logger.info(`[ts-sql-plugin] ${msg}`);
-  logger('config: ' + JSON.stringify(info.config));
 
   const config: TsSqlPluginConfig = {
     command: default_command,
@@ -69,15 +69,25 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                 config.command.slice(1).concat(`EXPLAIN ${s}`),
               );
 
-              if(config.options.maxExplainCost){
+              if(!p.status && config.maxExplainCost){
                 const [{}, max] = (p.stdout.toString as any)('utf8').match(/\(cost=.+\.\.([\d]+\.[\d]+)/);
-                if(max && Number(max) && Number(max) > config.options.maxExplainCost){
+                if(max && Number(max) && Number(max) > config.maxExplainCost){
                   return make_diagnostic(
                     1,
-                    tss.DiagnosticCategory.Error,
-                    `explain cost is too high: ${max}`
+                    tss.DiagnosticCategory.Warning,
+                    `explain cost is too high: ${max}
+${(p.stdout.toString as any)('utf8')}
+`
                   );
                 }
+              }
+
+              if(!p.status && config.showExplain){
+                return make_diagnostic(
+                  1,
+                  tss.DiagnosticCategory.Suggestion,
+                  (p.stdout.toString as any)('utf8'),
+                )
               }
 
               if (p.status) {
