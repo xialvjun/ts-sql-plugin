@@ -47,6 +47,8 @@ export const default_tags: Tags = {
   cond: 'cond',
 };
 
+export const default_cost_pattern = /\(cost=\d+\.?\d*\.\.(\d+\.?\d*)/;
+
 export const get_all_ts_files = (dirpath: string) => {
   let ts_files: string[] = [];
   const paths = fs.readdirSync(dirpath).map(it => path.join(dirpath, it));
@@ -74,11 +76,12 @@ export function report(
   sourceFile: ts.SourceFile,
   node: ts.Node,
   message: string,
+  level: 1 | 2 | 3 = 3,
 ) {
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(
     node.getStart(),
   );
-  console.error(
+  console[['info', 'warn', 'error'][level - 1]](
     `${sourceFile.fileName} (${line + 1},${character + 1}): ${message}\n\n`,
   );
 }
@@ -86,11 +89,11 @@ export function report(
 export function index_of_array(parent: any[], child: any[]) {
   I: for (let i = 0; i < parent.length; i++) {
     J: for (let j = 0; j < child.length; j++) {
-      if (parent[i+j] !== child[j]) {
+      if (parent[i + j] !== child[j]) {
         continue I;
       }
     }
     return i;
   }
-  return -1
+  return -1;
 }

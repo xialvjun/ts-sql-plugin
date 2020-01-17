@@ -10,30 +10,44 @@ import commander from 'commander';
 import {
   default_command,
   default_tags,
+  default_cost_pattern,
   get_all_ts_files,
   report,
   index_of_array,
 } from './utils';
 import { make_fake_expression } from './make_fake_expression';
 
+const default_cost_pattern_source = default_cost_pattern.source;
+const default_tags_string = Object.entries(default_tags)
+  .map(it => it.join('='))
+  .join(',');
+
 commander
-  .option('-p, --project <string>', 'The project path or tsconfig.json.', './')
+  .option(
+    '-p, --project <string>',
+    'The project path or tsconfig.json, defaults to: ./ .',
+    './',
+  )
   .option(
     '-e, --exclude <regexp>',
-    'The regexp to exclude files',
+    'The regexp to exclude files, defaults to: node_modules .',
     'node_modules',
   )
   .option(
     '-t, --tags <string>',
-    'The tags you used in you ts file.',
-    Object.entries(default_tags)
-      .map(it => it.join('='))
-      .join(','),
+    `The tags you used in you ts file, defaults to: ${default_tags_string} .`,
+    default_tags_string,
   )
   .option(
-    '-m, --max-cost <int>',
-    'throw error if explain cost exceeds treshold ',
-    null,
+    '-m, --error-cost <int>',
+    'Throw error if explain cost exceeds treshold.',
+  )
+  .option('--warn-cost <int>', 'Log warning if explain cost exceeds treshold.')
+  .option('--info-cost <int>', 'Log info if explain cost exceeds treshold.')
+  .option(
+    '--cost-pattern <regexp>',
+    `The regexp used to extract cost from command stdout, defaults to: ${default_cost_pattern_source} .`,
+    default_cost_pattern_source,
   )
   .arguments('[command...]')
   .description(
@@ -44,7 +58,7 @@ commander
         'The arguments passed to the command, like: -c. The faked sql will be added as the last argument.',
     },
   )
-  .action((_command) => {
+  .action(_command => {
     if (_command.length === 0) {
       _command = default_command;
     } else {
@@ -54,7 +68,13 @@ commander
     }
 
     const config = commander.opts();
-    config.tags = Object.assign(
+    config.error_cost = config.errorCost;
+    config.warn_cost = config.warnCost;
+    config.info_cost = config.infoCost;
+    config.cost_pattern = config.costPattern;
+
+    const exclude = new RegExp(config.exclude);
+    const tags = Object.assign(
       {},
       default_tags,
       config.tags
@@ -65,7 +85,7 @@ commander
           return acc;
         }, {}),
     );
-    const exclude = new RegExp(config.exclude);
+    const cost_pattern = new RegExp(config.cost_pattern);
 
     const project_path = path.dirname(config.project);
     const tsconfig_path = path.join(project_path, 'tsconfig.json');
@@ -79,7 +99,7 @@ commander
 
     const fake_expression = make_fake_expression(
       program.getTypeChecker(),
-      config.tags,
+      tags,
     );
 
     let has_error = false;
@@ -91,7 +111,8 @@ commander
     });
 
     if (has_error) {
-      throw new Error('Your code can not pass all sql test!!!');
+      console.error('Your code can not pass all sql test!!!');
+      process.exit(1);
     }
 
     function delint(sourceFile: ts.SourceFile) {
@@ -100,7 +121,7 @@ commander
       function delintNode(node: ts.Node) {
         if (node.kind === ts.SyntaxKind.TaggedTemplateExpression) {
           let n = node as ts.TaggedTemplateExpression;
-          if (n.tag.getText() === config.tags.sql) {
+          if (n.tag.getText() === tags.sql) {
             let query_configs = fake_expression(n);
             for (const qc of query_configs) {
               let s = qc.text.replace(/\?\?/gm, 'null');
@@ -108,19 +129,45 @@ commander
                 _command[0],
                 _command.slice(1).concat(`EXPLAIN ${s}`),
               );
-              if(config.maxCost){
-                const [{}, max] = (p.stdout.toString as any)('utf8').match(/\(cost=.+\.\.([\d]+\.[\d]+)/);
-                if(max && Number(max) && Number(max) > config.maxCost){
-                  has_error = true;
-                  report(sourceFile, node, `explain cost is too high: ${max}`);
-                  break;
-                }
-              }
 
               if (p.status) {
+                const stderr_str = (p.stderr.toString as any)('utf8');
                 has_error = true;
-                report(sourceFile, node, (p.stderr.toString as any)('utf8'));
+                report(sourceFile, node, stderr_str);
                 break;
+              }
+
+              if (config.error_cost || config.warn_cost || config.info_cost) {
+                const stdout_str = (p.stdout.toString as any)('utf8');
+                const match = stdout_str.match(cost_pattern);
+                if (match) {
+                  const [_, cost_str] = match;
+                  const cost = Number(cost_str);
+                  if (cost > config.error_cost) {
+                    has_error = true;
+                    report(
+                      sourceFile,
+                      node,
+                      `Error: explain cost is too high: ${cost}\n${s}`,
+                      3,
+                    );
+                    break;
+                  } else if (cost > config.warn_cost) {
+                    report(
+                      sourceFile,
+                      node,
+                      `Warn: explain cost is at warning: ${cost}\n${s}`,
+                      2,
+                    );
+                  } else if (cost > config.info_cost) {
+                    report(
+                      sourceFile,
+                      node,
+                      `Info: explain cost is ok: ${cost}\n${s}`,
+                      1,
+                    );
+                  }
+                }
               }
             }
             // query_configs.map((qc: any) => {
@@ -131,7 +178,7 @@ commander
             //   );
             //   if (p.status) {
             //     has_error = true;
-            //     report(sourceFile, node, (p.stderr.toString as any)('utf8'));
+            //     report(sourceFile, node, stdout_str);
             //   }
             // });
           }

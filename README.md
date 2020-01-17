@@ -32,7 +32,11 @@ Then, configure the `plugins` section in your *tsconfig.json*:
           "upd": "upd",
           "raw": "raw",
           "cond": "cond"
-        }
+        },
+        "cost_pattern": "/\\(cost=\\d+\\.?\\d*\\.\\.(\\d+\\.?\\d*)/",
+        "error_cost": null, // 100,
+        "warn_cost": null, // 50,
+        "info_cost": null, // -1,
       }
     ]
   }

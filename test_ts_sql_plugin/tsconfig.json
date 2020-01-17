@@ -60,6 +60,11 @@
       {
       "name": "ts-sql-plugin",
       "command": ["docker", "exec", "6b8204b88af5", "psql", "-U", "postgres", "-c"],
+      // "max_cost": 15,
+      // "show_explain": true,
+      "error_cost": 15,
+      "warn_cost": 10,
+      "info_cost": -1,
       }
     ]
   },

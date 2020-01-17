@@ -3,12 +3,19 @@ import * as child_process from 'child_process';
 // import ts from 'typescript'; // used as value, passed in by tsserver at runtime
 import tss from 'typescript/lib/tsserverlibrary'; // used as type only
 
-import { find_all_nodes, default_command, default_tags } from './utils';
+import {
+  find_all_nodes,
+  default_command,
+  default_tags,
+  default_cost_pattern,
+} from './utils';
 import { make_fake_expression, Tags } from './make_fake_expression';
 
 export interface TsSqlPluginConfig {
-  maxExplainCost?: number;
-  showExplain?: boolean;
+  error_cost?: number;
+  warn_cost?: number;
+  info_cost?: number;
+  cost_pattern?: string;
   command: string[];
   tags: Tags;
 }
@@ -19,9 +26,12 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
 
   const config: TsSqlPluginConfig = {
     command: default_command,
+    cost_pattern: default_cost_pattern.source,
     ...info.config,
     tags: { ...default_tags, ...(info.config || {}).tags },
   };
+
+  const cost_pattern = new RegExp(config.cost_pattern);
 
   return new Proxy(info.languageService, {
     get(target, p, receiver) {
@@ -69,33 +79,53 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
                 config.command.slice(1).concat(`EXPLAIN ${s}`),
               );
 
-              if(!p.status && config.maxExplainCost){
-                const [{}, max] = (p.stdout.toString as any)('utf8').match(/\(cost=.+\.\.([\d]+\.[\d]+)/);
-                if(max && Number(max) && Number(max) > config.maxExplainCost){
-                  return make_diagnostic(
-                    1,
-                    tss.DiagnosticCategory.Warning,
-                    `explain cost is too high: ${max}
-${(p.stdout.toString as any)('utf8')}
-`
-                  );
-                }
-              }
-
-              if(!p.status && config.showExplain){
-                return make_diagnostic(
-                  1,
-                  tss.DiagnosticCategory.Suggestion,
-                  (p.stdout.toString as any)('utf8'),
-                )
-              }
-
               if (p.status) {
+                const stderr_str = (p.stderr.toString as any)('utf8');
                 return make_diagnostic(
                   1,
                   tss.DiagnosticCategory.Error,
-                  (p.stderr.toString as any)('utf8'),
+                  stderr_str,
                 );
+              }
+
+              if (
+                [config.error_cost, config.warn_cost, config.info_cost].some(
+                  it => it != void 0,
+                )
+              ) {
+                const stdout_str = (p.stdout.toString as any)('utf8');
+                const match = stdout_str.match(cost_pattern);
+                if (match) {
+                  const [_, cost_str] = match;
+                  const cost = Number(cost_str);
+                  if (cost > config.error_cost) {
+                    return make_diagnostic(
+                      1,
+                      tss.DiagnosticCategory.Error,
+                      `explain cost is too high: ${cost}`,
+                    );
+                  }
+                  if (cost > config.warn_cost) {
+                    return make_diagnostic(
+                      1,
+                      tss.DiagnosticCategory.Warning,
+                      `explain cost is at warning: ${cost}`,
+                    );
+                  }
+                  if (cost > config.info_cost) {
+                    return make_diagnostic(
+                      1,
+                      tss.DiagnosticCategory.Suggestion,
+                      `explain cost is ok: ${cost}`,
+                    );
+                  }
+                } else {
+                  return make_diagnostic(
+                    1,
+                    tss.DiagnosticCategory.Error,
+                    `can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout_str}`,
+                  );
+                }
               }
             }
           });
