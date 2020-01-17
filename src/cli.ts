@@ -30,6 +30,11 @@ commander
       .map(it => it.join('='))
       .join(','),
   )
+  .option(
+    '-m, --max-cost <int>',
+    'throw error if explain cost exceeds treshold ',
+    null,
+  )
   .arguments('[command...]')
   .description(
     'Explain all your sqls in your code to test them. Eg: ts-sql-plugin -p ./my_ts_projet psql -c',
@@ -103,6 +108,15 @@ commander
                 _command[0],
                 _command.slice(1).concat(`EXPLAIN ${s}`),
               );
+              if(config.maxCost){
+                const [{}, max] = (p.stdout.toString as any)('utf8').match(/\(cost=.+\.\.([\d]+\.[\d]+)/);
+                if(max && Number(max) && Number(max) > config.maxCost){
+                  has_error = true;
+                  report(sourceFile, node, `explain cost is too high: ${max}`);
+                  break;
+                }
+              }
+
               if (p.status) {
                 has_error = true;
                 report(sourceFile, node, (p.stderr.toString as any)('utf8'));
