@@ -3,7 +3,7 @@ const raw = (texts: TemplateStringsArray, ...vs: any[]) => {
   let values = [];
   vs.forEach((v, idx) => {
     if (!!v && v[symbol]) {
-      text += v.text;
+      text += v.text.replace(/\$\d+/g, '??');
       values = [...values, ...v.values];
     } else {
       text += '??';
