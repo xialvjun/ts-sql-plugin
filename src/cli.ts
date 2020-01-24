@@ -124,7 +124,7 @@ commander
           if (n.tag.getText() === tags.sql) {
             let query_configs = fake_expression(n);
             for (const qc of query_configs) {
-              let s = qc.text.replace(/\?\?/gm, 'null');
+              let s: string = qc.text.replace(/\?\?/gm, 'null');
               let p = child_process.spawnSync(
                 _command[0],
                 _command.slice(1).concat(`EXPLAIN ${s}`),
@@ -137,7 +137,10 @@ commander
                 break;
               }
 
-              if (config.error_cost || config.warn_cost || config.info_cost) {
+              if (
+                (config.error_cost || config.warn_cost || config.info_cost) &&
+                s.trimLeft().match(/^--\s*ts-sql-plugin:ignore-cost/) == null
+              ) {
                 const stdout_str = (p.stdout.toString as any)('utf8');
                 const match = stdout_str.match(cost_pattern);
                 if (match) {

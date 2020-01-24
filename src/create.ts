@@ -73,7 +73,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
             // one sql`select * from person ${xxx ? sql.raw`aaa` : sql.raw`bbb`}` may generate two sqls, need to be explained one by one
             let query_configs = fake_expression(n);
             for (const qc of query_configs) {
-              let s = qc.text.replace(/\?\?/gm, 'null');
+              let s: string = qc.text.replace(/\?\?/gm, 'null');
               let p = child_process.spawnSync(
                 config.command[0],
                 config.command.slice(1).concat(`EXPLAIN ${s}`),
@@ -91,7 +91,8 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
               if (
                 [config.error_cost, config.warn_cost, config.info_cost].some(
                   it => it != void 0,
-                )
+                ) &&
+                s.trimLeft().match(/^--\s*ts-sql-plugin:ignore-cost/) == null
               ) {
                 const stdout_str = (p.stdout.toString as any)('utf8');
                 const match = stdout_str.match(cost_pattern);
