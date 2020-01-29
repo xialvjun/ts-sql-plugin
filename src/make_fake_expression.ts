@@ -1,5 +1,6 @@
 import ts from 'typescript'; // used as value, passed in by tsserver at runtime
 // import tss from 'typescript/lib/tsserverlibrary'; // used as type only
+import path from 'path';
 
 import sql from './sql';
 import { is_array, deep_flatten } from './utils';
@@ -15,9 +16,10 @@ export interface Tags {
 }
 
 export const make_fake_expression = (
-  type_checker: ts.TypeChecker,
+  program: ts.Program,
   tags: Tags,
 ) => {
+  const type_checker = program.getTypeChecker();
   const fns = {
     [tags.and]: sql.and,
     [tags.ins]: sql.ins,
@@ -71,16 +73,37 @@ export const make_fake_expression = (
     }
   }
 
+  function fake_expression_from_tagged_value_declaration(valueDeclaration: ts.Declaration) {
+    const childCount = valueDeclaration.getChildCount();
+    const template = valueDeclaration.getChildAt(childCount - 1);
+    if (ts.isTaggedTemplateExpression(template) && tag_regex.test(template.tag.getText())) {
+      return fake_expression_from_tagged_template(template);
+    }
+  }
+
   // ! fake raw``,and(),ins(),upd(),?: and other expression. sql`` is just a special kind of raw``.
   function fake_expression(n: ts.Expression) {
     if (ts.isIdentifier(n)) {
+      if (n.kind === ts.SyntaxKind.Identifier) {
+        const sourceFileToken = (n.getSourceFile() as unknown as {imports: ts.Node[]}).imports.find(imp => imp.parent.getText().match(n.getText()));
+        if (sourceFileToken) {
+          const currentDir = path.dirname(n.getSourceFile().fileName);
+          const sourceFilePath = path.resolve(currentDir, (sourceFileToken as unknown as {text: string}).text);
+          const sourceFile = program.getSourceFiles().find(f => f.fileName.match(sourceFilePath));
+          if (sourceFile) {
+            const symbol = (sourceFile as unknown as {locals: Map<string, ts.Symbol>}).locals.get(n.getText());
+            if (symbol) {
+              const valueDeclaration = symbol.getDeclarations()[0];
+              if (valueDeclaration) {
+                return fake_expression_from_tagged_value_declaration(valueDeclaration);
+              }
+            }
+          }
+        }
+      }
       const typeNode = (n as unknown as {flowNode: {node: ts.Type}}).flowNode?.node;
       if (typeNode && (typeNode as unknown as ts.Node).kind === ts.SyntaxKind.VariableDeclaration) {
-        const childCount = typeNode.symbol.valueDeclaration.getChildCount();
-        const template = typeNode.symbol.valueDeclaration.getChildAt(childCount - 1);
-        if (ts.isTaggedTemplateExpression(template) && tag_regex.test(template.tag.getText())) {
-          return fake_expression_from_tagged_template(template);
-        }
+        return fake_expression_from_tagged_value_declaration(typeNode.symbol.valueDeclaration);
       }
     }
     if (ts.isCallExpression(n)) {
