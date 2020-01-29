@@ -85,13 +85,16 @@ export const make_fake_expression = (
   function fake_expression(n: ts.Expression) {
     if (ts.isIdentifier(n)) {
       if (n.kind === ts.SyntaxKind.Identifier) {
-        const sourceFileToken = (n.getSourceFile() as unknown as {imports: ts.Node[]}).imports.find(imp => imp.parent.getText().match(n.getText()));
-        if (sourceFileToken) {
+        const sourceFileStatement = n.getSourceFile().statements.find((s: ts.ImportDeclaration) =>
+          s.moduleSpecifier && s.getText().match(n.getText())) as ts.ImportDeclaration | void;
+        if (sourceFileStatement) {
           const currentDir = path.dirname(n.getSourceFile().fileName);
-          const sourceFilePath = path.resolve(currentDir, (sourceFileToken as unknown as {text: string}).text);
+          const sourceFileRelativePath = sourceFileStatement.moduleSpecifier.getText().replace(/^\'/, '').replace(/\'$/, '');
+          const sourceFilePath = path.resolve(currentDir, sourceFileRelativePath);
           const sourceFile = program.getSourceFiles().find(f => f.fileName.match(sourceFilePath));
           if (sourceFile) {
-            const symbol = (sourceFile as unknown as {locals: Map<string, ts.Symbol>}).locals.get(n.getText());
+            const map = (sourceFile as unknown as {locals: Map<string, ts.Symbol>}).locals;
+            const symbol = map.get(n.getText());
             if (symbol) {
               const valueDeclaration = symbol.getDeclarations()[0];
               if (valueDeclaration) {
@@ -101,8 +104,8 @@ export const make_fake_expression = (
           }
         }
       }
-      const typeNode = (n as unknown as {flowNode: {node: ts.Type}}).flowNode?.node;
-      if (typeNode && (typeNode as unknown as ts.Node).kind === ts.SyntaxKind.VariableDeclaration) {
+      const typeNode = (n as unknown as {flowNode?: {node: ts.Type & ts.Node | void}}).flowNode?.node;
+      if (typeNode && typeNode.kind === ts.SyntaxKind.VariableDeclaration) {
         return fake_expression_from_tagged_value_declaration(typeNode.symbol.valueDeclaration);
       }
     }
