@@ -106,7 +106,35 @@ export const make_fake_expression = (
       }
       const typeNode = (n as unknown as {flowNode?: {node: ts.Type & ts.Node | void}}).flowNode?.node;
       if (typeNode && typeNode.kind === ts.SyntaxKind.VariableDeclaration) {
-        return fake_expression_from_tagged_value_declaration(typeNode.symbol.valueDeclaration);
+        const fromDirectVariable = fake_expression_from_tagged_value_declaration(typeNode.symbol.valueDeclaration);
+        if (fromDirectVariable) {
+          return fromDirectVariable;
+        }
+        const maybeMethodCall = typeNode.getChildAt(typeNode.getChildCount() - 1);
+        if (maybeMethodCall && ts.isCallExpression(maybeMethodCall) && maybeMethodCall.getText().match(/this\./)) {
+          let classDeclaration: ts.Node;
+          while (true) {
+            classDeclaration = (classDeclaration || typeNode).parent;
+            if (!classDeclaration || ts.isClassDeclaration(classDeclaration)) {
+              break;
+            }
+          }
+          if (ts.isClassDeclaration(classDeclaration)) {
+            const methodDeclaration = classDeclaration.members.find(m =>
+              (maybeMethodCall.expression as unknown as ts.MethodSignature)
+                .name.getText() === m.name.getText()) as ts.MethodDeclaration;
+            if (methodDeclaration) {
+              const lastStatementIdx = methodDeclaration.body.statements.length - 1;
+              const lastStatement = methodDeclaration.body.statements[lastStatementIdx] as {flowNode?: {node?: ts.Type & ts.Node}};
+              if (lastStatement) {
+                const valueDeclaration = lastStatement.flowNode?.node?.symbol.valueDeclaration;
+                if (valueDeclaration) {
+                  return fake_expression_from_tagged_value_declaration(valueDeclaration);
+                }
+              }
+            }
+          }
+        }
       }
     }
     if (ts.isCallExpression(n)) {
