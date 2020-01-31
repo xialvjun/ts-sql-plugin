@@ -1,6 +1,5 @@
 import ts from 'typescript'; // used as value, passed in by tsserver at runtime
 // import tss from 'typescript/lib/tsserverlibrary'; // used as type only
-import path from 'path';
 
 import sql from './sql';
 import { is_array, deep_flatten } from './utils';
