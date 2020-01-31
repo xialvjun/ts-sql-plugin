@@ -43,7 +43,7 @@ export function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
 
           const program = info.languageService.getProgram();
           const fake_expression = make_fake_expression(
-            program,
+            program.getTypeChecker(),
             config.tags,
           );
 

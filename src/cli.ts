@@ -98,7 +98,7 @@ commander
     const program = ts.createProgram(get_all_ts_files(project_path), tsconfig);
 
     const fake_expression = make_fake_expression(
-      program,
+      program.getTypeChecker(),
       tags,
     );
 

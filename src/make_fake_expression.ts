@@ -16,10 +16,9 @@ export interface Tags {
 }
 
 export const make_fake_expression = (
-  program: ts.Program,
+  type_checker: ts.TypeChecker,
   tags: Tags,
 ) => {
-  const type_checker = program.getTypeChecker();
   const fns = {
     [tags.and]: sql.and,
     [tags.ins]: sql.ins,
