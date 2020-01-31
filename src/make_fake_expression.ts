@@ -81,59 +81,33 @@ export const make_fake_expression = (
     }
   }
 
+  function fake_expression_from_function_value_declaration(valueDeclaration: ts.Declaration) {
+    const fnBody = <ts.Block>(
+      (<any>valueDeclaration).body ||
+      (<any>valueDeclaration).initializer && (<any>valueDeclaration).initializer.body);
+    const returnStatement = (fnBody && fnBody.statements || (<Array<ts.Statement>>[])).find(s => ts.isReturnStatement(s));
+    if (returnStatement) {
+      const template = returnStatement.getChildren().find(c => ts.isTaggedTemplateExpression(c)) as ts.TaggedTemplateExpression;
+      if (template && tag_regex.test(template.tag.getText())) {
+        return fake_expression_from_tagged_template(template);
+      }
+    }
+  }
+
   // ! fake raw``,and(),ins(),upd(),?: and other expression. sql`` is just a special kind of raw``.
   function fake_expression(n: ts.Expression) {
     if (ts.isIdentifier(n)) {
-      if (n.kind === ts.SyntaxKind.Identifier) {
-        const sourceFileStatement = n.getSourceFile().statements.find((s: ts.ImportDeclaration) =>
-          s.moduleSpecifier && s.getText().match(n.getText())) as ts.ImportDeclaration | void;
-        if (sourceFileStatement) {
-          const currentDir = path.dirname(n.getSourceFile().fileName);
-          const sourceFileRelativePath = sourceFileStatement.moduleSpecifier.getText().replace(/^\'/, '').replace(/\'$/, '');
-          const sourceFilePath = path.resolve(currentDir, sourceFileRelativePath);
-          const sourceFile = program.getSourceFiles().find(f => f.fileName.match(sourceFilePath));
-          if (sourceFile) {
-            const map = (sourceFile as unknown as {locals: Map<string, ts.Symbol>}).locals;
-            const symbol = map.get(n.getText());
-            if (symbol) {
-              const valueDeclaration = symbol.getDeclarations()[0];
-              if (valueDeclaration) {
-                return fake_expression_from_tagged_value_declaration(valueDeclaration);
-              }
-            }
-          }
-        }
-      }
-      const typeNode = (n as unknown as {flowNode?: {node: ts.Type & ts.Node | void}}).flowNode?.node;
-      if (typeNode && typeNode.kind === ts.SyntaxKind.VariableDeclaration) {
-        const fromDirectVariable = fake_expression_from_tagged_value_declaration(typeNode.symbol.valueDeclaration);
+      const symbol = type_checker.getSymbolAtLocation(n);
+      if (symbol.valueDeclaration) {
+        const fromDirectVariable = fake_expression_from_tagged_value_declaration(symbol.valueDeclaration);
         if (fromDirectVariable) {
           return fromDirectVariable;
         }
-        const maybeMethodCall = typeNode.getChildAt(typeNode.getChildCount() - 1);
-        if (maybeMethodCall && ts.isCallExpression(maybeMethodCall) && maybeMethodCall.getText().match(/this\./)) {
-          let classDeclaration: ts.Node;
-          while (true) {
-            classDeclaration = (classDeclaration || typeNode).parent;
-            if (!classDeclaration || ts.isClassDeclaration(classDeclaration)) {
-              break;
-            }
-          }
-          if (ts.isClassDeclaration(classDeclaration)) {
-            const methodDeclaration = classDeclaration.members.find(m =>
-              (maybeMethodCall.expression as unknown as ts.MethodSignature)
-                .name.getText() === m.name.getText()) as ts.MethodDeclaration;
-            if (methodDeclaration) {
-              const lastStatementIdx = methodDeclaration.body.statements.length - 1;
-              const lastStatement = methodDeclaration.body.statements[lastStatementIdx] as {flowNode?: {node?: ts.Type & ts.Node}};
-              if (lastStatement) {
-                const valueDeclaration = lastStatement.flowNode?.node?.symbol.valueDeclaration;
-                if (valueDeclaration) {
-                  return fake_expression_from_tagged_value_declaration(valueDeclaration);
-                }
-              }
-            }
-          }
+      }
+      if (symbol.declarations && symbol.declarations.length && (<any>ts).isAliasSymbolDeclaration(symbol.declarations[0])) {
+        const aliasedSymbol = type_checker.getAliasedSymbol(symbol);
+        if (aliasedSymbol.valueDeclaration) {
+          return fake_expression_from_tagged_value_declaration(aliasedSymbol.valueDeclaration);
         }
       }
     }
@@ -159,6 +133,22 @@ export const make_fake_expression = (
           fake = ut.types.map(t => object_type_to_fake(t));
         }
         return fn(fake);
+      }
+      const symbol = type_checker.getSymbolAtLocation(n.expression);
+      if (symbol.valueDeclaration) {
+        const resp = fake_expression_from_function_value_declaration(symbol.valueDeclaration);
+        if (resp) {
+          return resp;
+        }
+      }
+      if (symbol.declarations && symbol.declarations.length && (<any>ts).isAliasSymbolDeclaration(symbol.declarations[0])) {
+        const aliasedSymbol = type_checker.getAliasedSymbol(symbol);
+        if (aliasedSymbol.valueDeclaration) {
+          const resp = fake_expression_from_function_value_declaration(aliasedSymbol.valueDeclaration);
+          if (resp) {
+            return resp;
+          }
+        }
       }
     }
     if (ts.isTaggedTemplateExpression(n)) {
