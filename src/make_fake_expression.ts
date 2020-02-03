@@ -12,6 +12,7 @@ export interface Tags {
   upd: string;
   raw: string;
   cond: string;
+  mock: string;
 }
 
 export const make_fake_expression = (
@@ -23,6 +24,7 @@ export const make_fake_expression = (
     [tags.ins]: sql.ins,
     [tags.upd]: sql.upd,
     [tags.or]: sql.or,
+    [tags.mock]: sql.mock,
   };
   const tag_regex = new RegExp(
     '^' + tags.sql + '$|' + tags.raw + '$|' + tags.cond + '\\(',
@@ -114,6 +116,16 @@ export const make_fake_expression = (
       if (!!fn) {
         const t = type_checker.getTypeAtLocation(n.arguments[0]);
         let fake: any = null;
+        if (fn == sql.mock) {
+          const argument = n.arguments && n.arguments[0] as ts.ObjectLiteralExpression;
+          if (argument) {
+            const property = argument.properties.find(p => p.name.getText() === 'mock');
+            const text: string = (<any>property)?.initializer?.text;
+            if (text) {
+              return { [sql.symbol]: true, text, values: [] };
+            }
+          }
+        }
         if (fn == sql.and || fn == sql.upd || fn == sql.ins) {
           const ut = t.getNumberIndexType() as ts.UnionType;
           if (fn == sql.ins && !!ut) {

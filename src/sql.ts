@@ -92,6 +92,10 @@ sql.upd = (obj: object) => {
   return { [symbol]: true, text, values };
 };
 
+sql.mock = (obj: {mock: string, placeholder: string}) => {
+  return { [symbol]: true, text: obj.placeholder, values: [] };
+};
+
 function escape_identifier(identifier: string) {
   let [schema, table, column, operator]: string[] = ['', '', '', ''];
   [column = '', operator = '='] = identifier.replace(/"/g, '').split(' ');
