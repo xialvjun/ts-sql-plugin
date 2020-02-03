@@ -128,7 +128,11 @@ export const make_fake_expression = (
         }
         if (fn == sql.or) {
           const ut = t.getNumberIndexType() as ts.UnionType;
-          fake = ut.types.map(t => object_type_to_fake(t));
+          if (!!ut.types) {
+            fake = ut.types.map(t => object_type_to_fake(t));
+          } else {
+            fake = [object_type_to_fake(ut)];
+          }
         }
         return fn(fake);
       }
