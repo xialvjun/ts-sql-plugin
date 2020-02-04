@@ -96,3 +96,6 @@ a = sql`select * from books where ${sql.or([{'title like': 'xxx%'}, {title: 'yyy
 a = sql`select * from books where title like 'xxx%'`;
 const get_titles = () => ['abc', 'def'];
 a = sql`select * from books where title = any(${get_titles()})`;
+
+const a1 = sql`select * from books where id=${123}`;
+const a2 = sql`select * from (${a1}) a where a.id=${123}`;

@@ -99,6 +99,16 @@ db.query(sql`select * from person where name=${name} ${sql.cond(!!age_bigger_tha
 // ! where in will produce error because of node-postgres doesn't support it. use where column=any()
 db.query(sql`select * from person where id in (${[uuid(), uuid()]})`);
 db.query(sql`select * from person where id = any(${[uuid(), uuid()]})`);
+
+// you can use sql queries inside each other
+const s1 = sql`select * from subscriptions.attribute where entity_id = any(${[7045]})`;
+const s2 = sql`select * from (${s1}) attr where attribute_id = any(${[7049, 7050]})`;
+
+// ignore cost for query stuff implemented
+const s1 = sql`
+  -- ts-sql-plugin:ignore-cost
+  select * from subscriptions.attribute
+`;
 ```
 
 **And there is a complete example using [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) and [skm_ts](https://github.com/xialvjun/skm_ts) in folder test_ts_sql_plugin.**
