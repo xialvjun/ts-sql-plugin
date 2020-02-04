@@ -3,7 +3,7 @@ const raw = (texts: TemplateStringsArray, ...vs: any[]) => {
   let values = [];
   vs.forEach((v, idx) => {
     if (!!v && v[symbol]) {
-      text += v.text;
+      text += v.text.replace(/\$\d+/g, '??');
       values = [...values, ...v.values];
     } else {
       text += '??';
@@ -90,6 +90,10 @@ sql.upd = (obj: object) => {
     })
     .join(', ');
   return { [symbol]: true, text, values };
+};
+
+sql.mock = (obj: {mock: string, placeholder: string}) => {
+  return { [symbol]: true, text: obj.placeholder, values: [] };
 };
 
 function escape_identifier(identifier: string) {

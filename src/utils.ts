@@ -45,6 +45,7 @@ export const default_tags: Tags = {
   upd: 'upd',
   raw: 'raw',
   cond: 'cond',
+  mock: 'mock'
 };
 
 export const default_cost_pattern = /\(cost=\d+\.?\d*\.\.(\d+\.?\d*)/;
