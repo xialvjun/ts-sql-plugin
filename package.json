@@ -28,13 +28,13 @@
   "devDependencies": {
     "@types/node": "^12.0.1",
     "rimraf": "^2.6.3",
-    "typescript": "^3.4.5",
-    "typescript-template-language-service-decorator": "2.2.0"
+    "typescript": "^3.4.5"
   },
   "peerDependencies": {
     "typescript": "^3.0.0"
   },
   "dependencies": {
-    "commander": "^3.0.2"
+    "commander": "^3.0.2",
+    "typescript-template-language-service-decorator": "2.2.0"
   }
 }
