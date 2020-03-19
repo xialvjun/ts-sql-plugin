@@ -34,6 +34,7 @@
     "typescript": "^3.0.0"
   },
   "dependencies": {
-    "commander": "^3.0.2"
+    "commander": "^3.0.2",
+    "typescript-template-language-service-decorator": "2.2.0"
   }
 }
