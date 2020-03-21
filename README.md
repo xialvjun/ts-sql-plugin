@@ -3,6 +3,8 @@ TypeScript Language Service Plugin for SQL with a tagged template strings SQL bu
 
 ![readme_0](./readme_0.gif)
 
+![autocomplete](./autocomplete.gif)
+
 # Usage
 
 ## run as a language service plugin
