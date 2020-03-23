@@ -1233,12 +1233,13 @@ ts-invariant@^0.4.0:
   dependencies:
     tslib "^1.9.3"
 
-ts-sql-plugin@^0.4.3:
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/ts-sql-plugin/-/ts-sql-plugin-0.4.3.tgz#4c9207c98cbfbe177f69b6eb08d37aa386e8a6b1"
-  integrity sha512-fX8P9GQUFI8GKckRsSVR5ugSUblHsT3TrgNQEjGt6jeP859cJxRNnU0OxIfz0Ak2sUZe7fpb6QD3K6xDxvbdOw==
+ts-sql-plugin@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/ts-sql-plugin/-/ts-sql-plugin-0.5.0.tgz#763ddda04511220b08b93658786a27f495c98b75"
+  integrity sha512-NcttUqdIGfRTOV19Gb/iatgn0r34cgoIhecW0SUTPuBxtzr7o3u17YTyRUqLR8IAA1WO+lGdpkGe3Utz+9I+ag==
   dependencies:
     commander "^3.0.2"
+    typescript-template-language-service-decorator "2.2.0"
 
 tslib@^1.10.0, tslib@^1.9.3:
   version "1.10.0"
@@ -1253,10 +1254,15 @@ type-is@^1.6.16, type-is@~1.6.17, type-is@~1.6.18:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
+typescript-template-language-service-decorator@2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/typescript-template-language-service-decorator/-/typescript-template-language-service-decorator-2.2.0.tgz#4ee6d580f307fb9239978e69626f2775b8a59b2a"
+  integrity sha512-xiolqt1i7e22rpqMaprPgSFVgU64u3b9n6EJlAaUYE61jumipKAdI1+O5khPlWslpTUj80YzjUKjJ2jxT0D74w==
+
 typescript@^3.4.5:
-  version "3.7.5"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.5.tgz#0692e21f65fd4108b9330238aac11dd2e177a1ae"
-  integrity sha512-/P5lkRXkWHNAbcJIiHPfRoKqyd7bsyCma1hZNUGfn20qm64T6ZBlrzprymeu918H+mB/0rIg2gGK/BXkhhYgBw==
+  version "3.8.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.8.3.tgz#409eb8544ea0335711205869ec458ab109ee1061"
+  integrity sha512-MYlEfn5VrLNsgudQTVJeNaQFUAI7DkhnOjdpAp4T+ku1TfQClewlbSuTVHiA+8skNBgaf02TL/kLOvig4y3G8w==
 
 unpipe@1.0.0, unpipe@~1.0.0:
   version "1.0.0"
