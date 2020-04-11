@@ -114,3 +114,7 @@ const s1 = sql`
 ```
 
 **And there is a complete example using [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) and [skm_ts](https://github.com/xialvjun/skm_ts) in folder test_ts_sql_plugin.**
+
+## VSCode syntax highlight extension
+
+https://marketplace.visualstudio.com/items?itemName=darky.vscode-ts-sql-plugin
