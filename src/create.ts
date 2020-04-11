@@ -11,7 +11,8 @@ import {
   default_cost_pattern,
 } from './utils';
 import { make_fake_expression, Tags } from './make_fake_expression';
-import { SqlTemplateAutocomplete } from './autocomplete'
+import { SqlTemplateAutocomplete } from './autocomplete';
+import lunr from 'lunr';
 
 interface TsSqlPluginConfig {
   error_cost?: number;
@@ -139,21 +140,32 @@ export function makeCreate(mod: { typescript: typeof tss }) {
       },
     });
 
-    const db_meta_info_raw = child_process.spawnSync(
+    const db_info_raw = child_process.spawnSync(
       config.command[0],
       config.command.slice(1).concat("copy (select table_schema, table_name, column_name from information_schema.columns) to stdout delimiter ','"),
     ).stdout.toString();
 
-    const db_info = db_meta_info_raw.trim().split('\n').map(raw => {
+    const db_info = db_info_raw.trim().split('\n').map((raw, id) => {
       const [schema, table, column] = raw.split(',');
-      return {schema, table, column};
+      return {schema, table, column, id};
     });
 
     return decorateWithTemplateLanguageService(
       mod.typescript,
       proxy,
       info.project,
-      new SqlTemplateAutocomplete(db_info),
+      new SqlTemplateAutocomplete(
+        lunr(function() {
+          this.ref('id');
+          this.field('column');
+          this.field('schema');
+          this.field('table');
+          db_info.forEach(db_info_item => this.add(db_info_item));
+        }),
+        db_info.reduce((acc, db_info_item) => {
+          acc[db_info_item.id] = db_info_item;
+          return acc;
+        }, {})),
       { tags: ['sql'], enableForStringWithSubstitutions: true });
   }
 }
