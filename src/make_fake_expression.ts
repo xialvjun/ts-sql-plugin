@@ -98,13 +98,13 @@ export const make_fake_expression = (
   function fake_expression(n: ts.Expression) {
     if (ts.isIdentifier(n)) {
       const symbol = type_checker.getSymbolAtLocation(n);
-      if (symbol.valueDeclaration) {
+      if (symbol && symbol.valueDeclaration) {
         const fromDirectVariable = fake_expression_from_tagged_value_declaration(symbol.valueDeclaration);
         if (fromDirectVariable) {
           return fromDirectVariable;
         }
       }
-      if (symbol.declarations && symbol.declarations.length && (<any>ts).isAliasSymbolDeclaration(symbol.declarations[0])) {
+      if (symbol && symbol.declarations && symbol.declarations.length && (<any>ts).isAliasSymbolDeclaration(symbol.declarations[0])) {
         const aliasedSymbol = type_checker.getAliasedSymbol(symbol);
         if (aliasedSymbol.valueDeclaration) {
           return fake_expression_from_tagged_value_declaration(aliasedSymbol.valueDeclaration);
@@ -149,13 +149,13 @@ export const make_fake_expression = (
         return fn(fake);
       }
       const symbol = type_checker.getSymbolAtLocation(n.expression);
-      if (symbol.valueDeclaration) {
+      if (symbol && symbol.valueDeclaration) {
         const resp = fake_expression_from_function_value_declaration(symbol.valueDeclaration);
         if (resp) {
           return resp;
         }
       }
-      if (symbol.declarations && symbol.declarations.length && (<any>ts).isAliasSymbolDeclaration(symbol.declarations[0])) {
+      if (symbol && symbol.declarations && symbol.declarations.length && (<any>ts).isAliasSymbolDeclaration(symbol.declarations[0])) {
         const aliasedSymbol = type_checker.getAliasedSymbol(symbol);
         if (aliasedSymbol.valueDeclaration) {
           const resp = fake_expression_from_function_value_declaration(aliasedSymbol.valueDeclaration);
