@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as child_process from 'child_process';
@@ -43,13 +44,13 @@ commander
     'Throw error if explain cost exceeds treshold.',
   )
   .option(
-    '-i, --emmit <regexp>',
-    'emmit sqls that matches regexp, takes filename from capturing group',
+    '--emit-regexp <regexp>',
+    'emit sqls that matches regexp, takes fileName from capturing group',
   )
   .option(
-    '-o, --out-dir <string>',
-    'path to be emmited',
-    './'
+    '--emit-out-dir <string>',
+    'path, where sqls will be emmited',
+    './emit-sql'
   )
   .option('--warn-cost <int>', 'Log warning if explain cost exceeds treshold.')
   .option('--info-cost <int>', 'Log info if explain cost exceeds treshold.')
@@ -83,7 +84,6 @@ commander
     config.cost_pattern = config.costPattern;
 
     const exclude = new RegExp(config.exclude);
-    const emmitRegex = new RegExp(config.emmit);
     const tags = Object.assign(
       {},
       default_tags,
@@ -135,12 +135,19 @@ commander
             let query_configs = fake_expression(n);
             for (const qc of query_configs) {
               let s: string = qc.text.replace(/\?\?/gm, 'null');
-                if(config.emmit) {
-                  const match = s.match(emmitRegex);
-                  if(match){
-                    const fileName = match?.groups?.fileName ?? Date.now();
-                    fs.writeFileSync(`${config.outDir}${fileName}.sql`, s);
-                  }
+              if (config.emitRegexp) {
+                const emitRegexp = new RegExp(config.emitRegexp);
+                const match = s.match(emitRegexp);
+                if (match) {
+                  const fileName = match?.groups?.fileName ?? crypto.createHash('sha1').update(s).digest('hex');
+                  console.log(config);
+                  const filePath = `${config.emitOutDir}/${fileName}.sql`;
+                  fs.writeFile(filePath, s, err => {
+                    if (err) {
+                      console.error(`Error occured, when emitting file "${filePath}"`);
+                    }
+                  });
+                }
               }
               let p = child_process.spawnSync(
                 _command[0],
