@@ -140,7 +140,6 @@ commander
                 const match = s.match(emitRegexp);
                 if (match) {
                   const fileName = match?.groups?.fileName ?? crypto.createHash('sha1').update(s).digest('hex');
-                  console.log(config);
                   const filePath = `${config.emitOutDir}/${fileName}.sql`;
                   fs.writeFile(filePath, s, err => {
                     if (err) {
