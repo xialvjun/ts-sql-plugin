@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as child_process from 'child_process';
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+import * as child_process from "child_process";
 
-import ts from 'typescript';
-import commander from 'commander';
+import ts from "typescript";
+import commander from "commander";
 
 import {
   default_command,
@@ -15,65 +15,66 @@ import {
   get_all_ts_files,
   report,
   index_of_array,
-} from './utils';
-import { make_fake_expression } from './make_fake_expression';
+} from "./utils";
+import { make_fake_expression } from "./make_fake_expression";
+import { parseDirectives } from "./directiveParser";
 
 const default_cost_pattern_source = default_cost_pattern.source;
 const default_tags_string = Object.entries(default_tags)
-  .map(it => it.join('='))
-  .join(',');
+  .map((it) => it.join("="))
+  .join(",");
 
 commander
   .option(
-    '-p, --project <string>',
-    'The project path or tsconfig.json, defaults to: ./ .',
-    './',
+    "-p, --project <string>",
+    "The project path or tsconfig.json, defaults to: ./ .",
+    "./"
   )
   .option(
-    '-e, --exclude <regexp>',
-    'The regexp to exclude files, defaults to: node_modules .',
-    'node_modules',
+    "-e, --exclude <regexp>",
+    "The regexp to exclude files, defaults to: node_modules .",
+    "node_modules"
   )
   .option(
-    '-t, --tags <string>',
+    "-t, --tags <string>",
     `The tags you used in you ts file, defaults to: ${default_tags_string} .`,
-    default_tags_string,
+    default_tags_string
   )
   .option(
-    '-m, --error-cost <int>',
-    'Throw error if explain cost exceeds treshold.',
+    "-m, --error-cost <int>",
+    "Throw error if explain cost exceeds treshold."
   )
   .option(
-    '--emit-regexp <regexp>',
-    'emit sqls that matches regexp, takes fileName from capturing group',
+    "--emit-regexp <regexp>",
+    "emit sqls that matches regexp, takes fileName from capturing group"
   )
   .option(
-    '--emit-out-dir <string>',
-    'path, where sqls will be emmited',
-    './emit-sql'
+    "--emit-out-dir <string>",
+    "path, where sqls will be emmited",
+    "./emit-sql"
   )
-  .option('--warn-cost <int>', 'Log warning if explain cost exceeds treshold.')
-  .option('--info-cost <int>', 'Log info if explain cost exceeds treshold.')
+  .option("--warn-cost <int>", "Log warning if explain cost exceeds treshold.")
+  .option("--info-cost <int>", "Log info if explain cost exceeds treshold.")
   .option(
-    '--cost-pattern <regexp>',
+    "--cost-pattern <regexp>",
     `The regexp used to extract cost from command stdout, defaults to: ${default_cost_pattern_source} .`,
-    default_cost_pattern_source,
+    default_cost_pattern_source
   )
-  .arguments('[command...]')
+  .arguments("[command...]")
   .description(
-    'Explain all your sqls in your code to test them. Eg: ts-sql-plugin -p ./my_ts_projet psql -c',
+    "Explain all your sqls in your code to test them. Eg: ts-sql-plugin -p ./my_ts_projet psql -c",
     {
-      command: 'The command to be run to explain the faked sql, like: psql.',
+      command: "The command to be run to explain the faked sql, like: psql.",
       args:
-        'The arguments passed to the command, like: -c. The faked sql will be added as the last argument.',
-    },
+        "The arguments passed to the command, like: -c. The faked sql will be added as the last argument.",
+    }
   )
-  .action(_command => {
+  .action((_command) => {
     if (_command.length === 0) {
       _command = default_command;
     } else {
       _command = commander.rawArgs.slice(
-        index_of_array(commander.rawArgs, _command),
+        index_of_array(commander.rawArgs, _command)
       );
     }
 
@@ -88,40 +89,40 @@ commander
       {},
       default_tags,
       config.tags
-        .split(',')
-        .map(s => s.split('='))
+        .split(",")
+        .map((s) => s.split("="))
         .reduce((acc, [k, v]) => {
           acc[k] = v;
           return acc;
-        }, {}),
+        }, {})
     );
     const cost_pattern = new RegExp(config.cost_pattern);
 
     const project_path = path.dirname(config.project);
-    const tsconfig_path = path.join(project_path, 'tsconfig.json');
+    const tsconfig_path = path.join(project_path, "tsconfig.json");
 
     const { config: tsconfig } = ts.parseConfigFileTextToJson(
       tsconfig_path,
-      fs.readFileSync(tsconfig_path, { encoding: 'utf8' }),
+      fs.readFileSync(tsconfig_path, { encoding: "utf8" })
     );
 
     const program = ts.createProgram(get_all_ts_files(project_path), tsconfig);
 
     const fake_expression = make_fake_expression(
       program.getTypeChecker(),
-      tags,
+      tags
     );
 
     let has_error = false;
 
-    program.getSourceFiles().forEach(f => {
+    program.getSourceFiles().forEach((f) => {
       if (!exclude.test(f.fileName)) {
         delint(f);
       }
     });
 
     if (has_error) {
-      console.error('Your code can not pass all sql test!!!');
+      console.error("Your code can not pass all sql test!!!");
       process.exit(1);
     }
 
@@ -134,37 +135,37 @@ commander
           if (n.tag.getText() === tags.sql) {
             let query_configs = fake_expression(n);
             for (const qc of query_configs) {
-              let s: string = qc.text.replace(/\?\?/gm, 'null');
-              if (config.emitRegexp) {
-                const emitRegexp = new RegExp(config.emitRegexp);
-                const match = s.match(emitRegexp);
-                if (match) {
-                  const fileName = match?.groups?.fileName ?? crypto.createHash('sha1').update(s).digest('hex');
-                  const filePath = `${config.emitOutDir}/${fileName}.sql`;
-                  fs.writeFile(filePath, s, err => {
-                    if (err) {
-                      console.error(`Error occured, when emitting file "${filePath}"`);
-                    }
-                  });
-                }
+              let s: string = qc.text.replace(/\?\?/gm, "null");
+              const directives = parseDirectives(s);
+              const emitDir = directives.find((d) => d.directive === "emit");
+              if (emitDir) {
+                const fileName =
+                  (emitDir.arg as string) ??
+                  crypto.createHash("sha1").update(s).digest("hex");
+                const filePath = `${config.emitOutDir}/${fileName}.sql`;
+                fs.writeFile(filePath, s, (err) => {
+                  if (err) {
+                    console.error(
+                      `Error occured, when emitting file "${filePath}"`
+                    );
+                  }
+                });
               }
               let p = child_process.spawnSync(
                 _command[0],
-                _command.slice(1).concat(`EXPLAIN ${s}`),
+                _command.slice(1).concat(`EXPLAIN ${s}`)
               );
-
               if (p.status) {
-                const stderr_str = (p.stderr.toString as any)('utf8');
+                const stderr_str = (p.stderr.toString as any)("utf8");
                 has_error = true;
                 report(sourceFile, node, stderr_str);
                 break;
               }
-
               if (
                 (config.error_cost || config.warn_cost || config.info_cost) &&
-                s.trimLeft().match(/^--\s*ts-sql-plugin:ignore-cost/) == null
+                !directives.some((d) => (d.directive = "ignore-cost"))
               ) {
-                const stdout_str = (p.stdout.toString as any)('utf8');
+                const stdout_str = (p.stdout.toString as any)("utf8");
                 const match = stdout_str.match(cost_pattern);
                 if (match) {
                   const [_, cost_str] = match;
@@ -175,7 +176,7 @@ commander
                       sourceFile,
                       node,
                       `Error: explain cost is too high: ${cost}\n${s}`,
-                      3,
+                      3
                     );
                     break;
                   } else if (cost > config.warn_cost) {
@@ -183,14 +184,14 @@ commander
                       sourceFile,
                       node,
                       `Warn: explain cost is at warning: ${cost}\n${s}`,
-                      2,
+                      2
                     );
                   } else if (cost > config.info_cost) {
                     report(
                       sourceFile,
                       node,
                       `Info: explain cost is ok: ${cost}\n${s}`,
-                      1,
+                      1
                     );
                   }
                 }

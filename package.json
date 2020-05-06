@@ -13,7 +13,8 @@
   "scripts": {
     "clean": "rimraf lib",
     "build": "yarn clean && tsc -p .",
-    "watch": "tsc --watch -p ."
+    "watch": "tsc --watch -p .",
+    "test": "mocha -r ts-node/register test/**/*.ts"
   },
   "author": "xialvjun@live.com",
   "files": [
@@ -26,9 +27,15 @@
     "url": "https://github.com/xialvjun/ts-sql-plugin.git"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.11",
     "@types/lunr": "2.3.3",
+    "@types/mocha": "^7.0.2",
     "@types/node": "^12.0.1",
+    "chai": "^4.2.0",
+    "mocha": "^7.1.2",
+    "prettier": "^2.0.5",
     "rimraf": "^2.6.3",
+    "ts-node": "^8.10.1",
     "typescript": "^3.8.3"
   },
   "peerDependencies": {
