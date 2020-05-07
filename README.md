@@ -111,6 +111,14 @@ const s1 = sql`
   -- ts-sql-plugin:ignore-cost
   select * from subscriptions.attribute
 `;
+
+// you can emit sql to explicit file
+// this will be emitted to emit-sql/allAttribute.sql file
+// you may change `emit-sql` folder to another via `--emit-out-dir` option of cli
+const s1 = sql`
+  -- ts-sql-plugin:emit("allAttribute")
+  select * from subscriptions.attribute
+`;
 ```
 
 **And there is a complete example using [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) and [skm_ts](https://github.com/xialvjun/skm_ts) in folder test_ts_sql_plugin.**
