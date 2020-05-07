@@ -7,7 +7,7 @@ const regex = new RegExp(
 );
 
 const takeUntil = <T>(source: T[], predicate: (val: T) => boolean) => {
-  const takeUntil = source.findIndex(predicate) ?? source.length;
+  const takeUntil = source.findIndex(predicate);
   return source.slice(0, takeUntil);
 };
 

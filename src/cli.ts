@@ -45,10 +45,6 @@ commander
     "Throw error if explain cost exceeds treshold."
   )
   .option(
-    "--emit-regexp <regexp>",
-    "emit sqls that matches regexp, takes fileName from capturing group"
-  )
-  .option(
     "--emit-out-dir <string>",
     "path, where sqls will be emitted",
     "./emit-sql"
@@ -163,7 +159,7 @@ commander
               }
               if (
                 (config.error_cost || config.warn_cost || config.info_cost) &&
-                !directives.some((d) => (d.directive = "ignore-cost"))
+                !directives.some((d) => (d.directive === "ignore-cost"))
               ) {
                 const stdout_str = (p.stdout.toString as any)("utf8");
                 const match = stdout_str.match(cost_pattern);
