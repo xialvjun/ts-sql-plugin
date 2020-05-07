@@ -21,40 +21,26 @@ describe("parseDirectives ", () => {
 
   it("should parse single line with json argument", function () {
     const result = parseDirectives(`
-   -- ts-sql-plugin:emmit("../emmitdir/filename")  
+   -- ts-sql-plugin:emit("../emitdir/filename")  
    select * from *
 `);
     expect(result).to.have.lengthOf(1, "it should find one directive");
-    expect(result[0].directive).to.eq("emmit");
-    expect(result[0].arg).to.eq("../emmitdir/filename");
+    expect(result[0].directive).to.eq("emit");
+    expect(result[0].arg).to.eq("../emitdir/filename");
   });
 
   it("should parse multiple lines with directive", function () {
     const result = parseDirectives(`
-      -- ts-sql-plugin:emmit("../emmitdir/filename")
+      -- ts-sql-plugin:emit("../emitdir/filename")
         -- ts-sql-plugin:ignore-cost
 select * from *
 `);
     expect(result).to.have.lengthOf(2, "it should find two directives");
     expect(result[0]).to.deep.eq({
-      directive: "emmit",
-      arg: "../emmitdir/filename",
+      directive: "emit",
+      arg: "../emitdir/filename",
     });
     expect(result[1]).to.deep.eq({ directive: "ignore-cost", arg: undefined });
   });
 
-  it("should parse multiple lines with directive", function () {
-    const result = parseDirectives(`
-
--- ts-sql-plugin:ignore-cost
-SELECT * 
-FROM subscriptions.subscription 
-WHERE 
-dict_subscription_status_id <> null AND
-is_test_subscr_flg = false
-
-`);
-    expect(result).to.have.lengthOf(1, "it should find one directives");
-    expect(result[0]).to.deep.eq({ directive: "ignore-cost", arg: undefined });
-  });
 });

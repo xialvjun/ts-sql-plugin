@@ -50,7 +50,7 @@ commander
   )
   .option(
     "--emit-out-dir <string>",
-    "path, where sqls will be emmited",
+    "path, where sqls will be emitted",
     "./emit-sql"
   )
   .option("--warn-cost <int>", "Log warning if explain cost exceeds treshold.")
