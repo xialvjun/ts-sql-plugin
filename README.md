@@ -123,6 +123,11 @@ const s1 = sql`
 
 **And there is a complete example using [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) and [skm_ts](https://github.com/xialvjun/skm_ts) in folder test_ts_sql_plugin.**
 
+## Generate types from emitted sql
+
+You can use [types-from-sql](https://github.com/o175/types-from-sql) tool
+for generating types from your emitted sql via `--ts-sql-plugin:emit("someName")` directive.
+
 ## VSCode syntax highlight extension
 
 https://marketplace.visualstudio.com/items?itemName=darky.vscode-ts-sql-plugin
