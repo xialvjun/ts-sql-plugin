@@ -117,6 +117,7 @@ const s1 = sql`
 // you can emit sql to explicit file
 // this will be emitted to emit-sql/allAttribute.sql file
 // you may change `emit-sql` folder to another via `--emit-out-dir` option of cli
+// also `--watch` option of cli can be used to emit it in realtime
 const s1 = sql`
   -- ts-sql-plugin:emit("allAttribute")
   select * from subscriptions.attribute
@@ -129,6 +130,7 @@ const s1 = sql`
 
 You can use [types-from-sql](https://github.com/o175/types-from-sql) tool
 for generating types from your emitted sql via `--ts-sql-plugin:emit("someName")` directive.
+For generate types in realtime, use `--watch` option of cli.
 
 ## VSCode syntax highlight extension
 
