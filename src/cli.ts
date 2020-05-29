@@ -107,6 +107,8 @@ commander
 
     let has_error = false;
 
+    console.log('Start init sql check and emit...');
+
     initProgram.getSourceFiles().forEach((f) => {
       if (!exclude.test(f.fileName)) {
         delint(f);
@@ -117,6 +119,8 @@ commander
       console.error("Your code can not pass all sql test!!!");
       process.exit(1);
     }
+
+    console.log('Init sql check and emit finished.');
 
     function delint(sourceFile: ts.SourceFile) {
       delintNode(sourceFile);
