@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
-    "@types/lodash.debounce": "4.0.6",
     "@types/lunr": "2.3.3",
     "@types/mocha": "^7.0.2",
     "@types/node": "12.12.41",
@@ -43,9 +42,7 @@
     "typescript": "^3.0.0"
   },
   "dependencies": {
-    "chokidar": "3.4.0",
     "commander": "3.0.2",
-    "lodash.debounce": "4.0.8",
     "lunr": "2.3.8",
     "typescript-template-language-service-decorator": "2.2.0"
   }

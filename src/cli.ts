@@ -7,8 +7,6 @@ import * as child_process from "child_process";
 
 import ts from "typescript";
 import commander from "commander";
-import chokidar from "chokidar";
-import debounce from "lodash.debounce";
 
 import { default_command, default_tags, default_cost_pattern, get_all_ts_files, report, index_of_array } from "./utils";
 import { make_fake_expression } from "./make_fake_expression";
@@ -90,25 +88,21 @@ commander
     let fake_expression = make_fake_expression(initProgram.getTypeChecker(), tags);
 
     if (config.watch) {
-      let changedFile = "";
-      chokidar.watch(`${project_path}/**/*.{ts,tsx}`).on("all", ({}, path) => {
-        changedFile = path;
-      });
-      const origOnWatch = watchHost.onWatchStatusChange;
-      const onChangeFile = debounce(
-        () => {
-          const file = watchProgram.getProgram().getSourceFile(path.join(project_path, changedFile));
-          if (file && !exclude.test(file.fileName)) {
-            fake_expression = make_fake_expression(watchProgram.getProgram().getProgram().getTypeChecker(), tags);
-            delint(file);
-          }
-        },
-        2000
-      );
-      watchHost.onWatchStatusChange = (...args) => {
-        origOnWatch.apply(watchHost, args);
-        onChangeFile();
+      const onChangeFile = (fileName: string) => {
+        const file = watchProgram.getProgram().getSourceFile(fileName);
+        if (file && !exclude.test(file.fileName)) {
+          fake_expression = make_fake_expression(watchProgram.getProgram().getProgram().getTypeChecker(), tags);
+          delint(file);
+        }
       };
+      const watchFile = (sourceFile: ts.SourceFile) => {
+        watchHost.watchFile(sourceFile.fileName, (fileName, event) => {
+          if (event !== ts.FileWatcherEventKind.Deleted) {
+            onChangeFile(fileName);
+          }
+        });
+      };
+      watchProgram.getProgram().getSourceFiles().forEach(watchFile);
     }
 
     let has_error = false;
