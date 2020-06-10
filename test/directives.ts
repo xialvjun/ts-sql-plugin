@@ -61,4 +61,21 @@ describe("parseDirectives ", () => {
     expect(result[1]).to.deep.eq({ directive: "ignore-cost", arg: undefined });
   });
 
+  it("test /**/ comments", function () {
+    const result = parseDirectives(`
+      /* ts-sql-plugin:emit("../emitdir/filename") */
+      /* ts-sql-plugin:ignore-cost */
+      select * from (
+        /* ts-sql-plugin:ignore-cost */
+        select * from *
+      ) x
+    `);
+    expect(result).to.have.lengthOf(2, "it should find two directives");
+    expect(result[0]).to.deep.eq({
+      directive: "emit",
+      arg: "../emitdir/filename",
+    });
+    expect(result[1]).to.deep.eq({ directive: "ignore-cost", arg: undefined });
+  });
+
 });
