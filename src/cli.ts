@@ -137,7 +137,7 @@ commander
               if (emitDir) {
                 const fileName = (emitDir.arg as string) ?? crypto.createHash("sha1").update(s).digest("hex");
                 const filePath = `${config.emitOutDir}/${fileName}.sql`;
-                fs.writeFile(filePath, s, (err) => {
+                fs.writeFile(filePath, `${s};`, (err) => {
                   if (err) {
                     console.error(`Error occured, when emitting file "${filePath}"`);
                   }
