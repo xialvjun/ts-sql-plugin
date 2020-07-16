@@ -1,32 +1,28 @@
 const raw = (texts: TemplateStringsArray, ...vs: any[]) => {
   let text = texts[0];
-  let values = [];
+  let values: any[] = [];
   vs.forEach((v, idx) => {
     if (!!v && v[symbol]) {
-      text += v.text.replace(/\$\d+/g, '??');
+      text += v.text.replace(/\$\d+/g, "??");
       values = [...values, ...v.values];
     } else {
-      text += '??';
+      text += "??";
       values.push(v);
     }
-    text += texts[idx+1] || '';
+    text += texts[idx + 1] || "";
   });
   return { [symbol]: true, text, values };
 };
 
-export const sql = (texts: TemplateStringsArray, ...vs: any[]) => {
-  let query = raw(texts, ...vs);
-  query.text = query.text.split('??').reduce((acc, cv, ci) => acc + '$' + ci + cv);
-  return query;
-};
+export const sql = (texts: TemplateStringsArray, ...vs: any[]) => raw(texts, ...vs);
 
 export default sql;
 
-const symbol = (sql.symbol = Symbol('sql'));
+const symbol = (sql.symbol = Symbol("sql"));
 
 sql.raw = raw;
 
-sql.cond = (condition: boolean) => condition ? raw : (...anything: any[]) => raw``;
+sql.cond = (condition: boolean) => (condition ? raw : (..._: any[]) => raw``);
 
 // const to_and = {m: undefined, n: undefined};
 // no first and
@@ -39,42 +35,47 @@ sql.and = (obj: object) => {
   let kvs = Object.entries(obj)
     .filter(([k, v]) => v !== undefined)
     .sort(([ka, va], [kb, vb]) => (ka < kb ? -1 : ka > kb ? 1 : 0));
-  let values = [];
+  let values: any[] = [];
   if (kvs.length === 0) {
-    return { [symbol]: true, text: '', values };
+    return { [symbol]: true, text: "", values };
   }
   let text = kvs
     .map(([k, v]) => {
       values.push(v);
-      return escape_identifier(k) + ' ??';
+      return escape_identifier(k) + " ??";
     })
-    .join(' AND ');
+    .join(" AND ");
   return { [symbol]: true, text, values };
 };
 
 sql.or = <T extends any[]>(objs: T) => {
-  return objs.map(obj => sql.and(obj)).reduce((acc, cv, idx) => {
-    acc.text += `${idx === 0 ? '' : ' OR'} (${cv.text})`;
-    acc.values = acc.values.concat(cv.values);
-    return acc;
-  }, { [symbol]: true, text: '', values: [] });
+  return objs
+    .map(obj => sql.and(obj))
+    .reduce(
+      (acc, cv, idx) => {
+        acc.text += `${idx === 0 ? "" : " OR"} (${cv.text})`;
+        acc.values = acc.values.concat(cv.values);
+        return acc;
+      },
+      { [symbol]: true, text: "", values: [] },
+    );
 };
 
 sql.ins = (obj_or_objs: object | object[]) => {
-  let objs = [].concat(obj_or_objs);
+  let objs: any[] = [].concat(obj_or_objs as any);
   let keys = Object.keys(Object.assign({}, ...objs)).sort();
-  let values = [];
-  let text = `(${keys.map(k => escape_identifier(k).split(' ')[0]).join(', ')}) VALUES ${(objs as object[])
+  let values: any[] = [];
+  let text = `(${keys.map(k => escape_identifier(k).split(" ")[0]).join(", ")}) VALUES ${objs
     .map(
       obj =>
         `(${keys
           .map(k => {
             values.push(obj[k]);
-            return '??';
+            return "??";
           })
-          .join(', ')})`,
+          .join(", ")})`,
     )
-    .join(', ')}`;
+    .join(", ")}`;
   return { [symbol]: true, text, values };
 };
 
@@ -82,24 +83,22 @@ sql.upd = (obj: object) => {
   let kvs = Object.entries(obj)
     .filter(([k, v]) => v !== undefined)
     .sort(([ka, va], [kb, vb]) => (ka < kb ? -1 : ka > kb ? 1 : 0));
-  let values = [];
+  let values: any[] = [];
   let text = kvs
     .map(([k, v]) => {
       values.push(v);
-      return escape_identifier(k) + ' ??';
+      return escape_identifier(k) + " ??";
     })
-    .join(', ');
+    .join(", ");
   return { [symbol]: true, text, values };
 };
 
-sql.mock = (obj: {mock: string, placeholder: string}) => {
-  return { [symbol]: true, text: obj.placeholder, values: [] };
-};
+sql.mock = <M extends string>(value: any) => value;
 
 function escape_identifier(identifier: string) {
-  let [schema, table, column, operator]: string[] = ['', '', '', ''];
-  [column = '', operator = '='] = identifier.replace(/"/g, '').split(' ');
-  let idents = column.split('.');
+  let [schema, table, column, operator]: string[] = ["", "", "", ""];
+  [column = "", operator = "="] = identifier.replace(/"/g, "").split(" ");
+  let idents = column.split(".");
   if (idents.length === 1) {
     column = idents[0];
   }
@@ -109,10 +108,8 @@ function escape_identifier(identifier: string) {
   if (idents.length === 3) {
     [schema, table, column] = idents;
   }
-  return `"${schema}"."${table}"."${column}" ${operator}`.replace(/""\./g, '');
+  return `"${schema}"."${table}"."${column}" ${operator}`.replace(/""\./g, "");
 }
-
-
 
 // ? 有想过把所有数据都放在类型系统上, 这样 sql.raw`` 得到的结果就可以作为变量到处传递了, 不需要限制死在 sql`` 内部使用, 与运行时等同...但问题是 TemplateStringsArray 把字符串模板的 const 字符串信息丢失了, 这里只能 typescript 上游去解决, 这样在类型上根本无法得到 raw 里面的字符串, 至于从变量传递作用域上, 那结果就是完全不确定的
 // interface AAA<TSA, VS> {

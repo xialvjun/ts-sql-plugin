@@ -18,7 +18,7 @@ export const parseDirectives = (query: string): IDirective[] => {
   ).reduce((accum, line) => {
     const match = line.trimLeft().match(regex);
     if (match) {
-      const { directive, arg } = match.groups;
+      const { directive, arg } = match.groups!;
       return [...accum, { directive, arg: arg && JSON.parse(arg) }];
     } else {
       return accum;

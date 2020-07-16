@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { parseDirectives } from "../src/directiveParser";
+import { parseDirectives } from "../lib/directiveParser";
 
 describe("parseDirectives ", () => {
   it("should return [] when theres no directives specified", function () {

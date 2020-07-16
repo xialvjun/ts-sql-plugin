@@ -1,8 +1,10 @@
 .cache/
 .vscode/
+.github/
 .gitignore.d/
 node_modules/
 dist/
 
-*.js
+.babelrc
+.prettierrc
 *.map

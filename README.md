@@ -2,10 +2,10 @@
 TypeScript Language Service Plugin for SQL with a tagged template strings SQL builder. Inspired by [andywer/squid](https://github.com/andywer/squid)
 
 #### check sql error demo:
-![readme_0](./readme_0.gif)
+![readme_0](./docs/readme_0.gif)
 
 #### autocomplete demo:
-![autocomplete](./autocomplete.gif)
+![autocomplete](./docs/autocomplete.gif)
 
 # Usage
 

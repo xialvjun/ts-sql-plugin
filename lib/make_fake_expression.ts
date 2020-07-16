@@ -2,18 +2,7 @@ import ts from 'typescript'; // used as value, passed in by tsserver at runtime
 // import tss from 'typescript/lib/tsserverlibrary'; // used as type only
 
 import sql from './sql';
-import { is_array, deep_flatten } from './utils';
-
-export interface Tags {
-  sql: string;
-  and: string;
-  or: string;
-  ins: string;
-  upd: string;
-  raw: string;
-  cond: string;
-  mock: string;
-}
+import { is_array, deep_flatten, Tags } from './utils';
 
 export const make_fake_expression = (
   type_checker: ts.TypeChecker,
@@ -21,9 +10,9 @@ export const make_fake_expression = (
 ) => {
   const fns = {
     [tags.and]: sql.and,
+    [tags.or]: sql.or,
     [tags.ins]: sql.ins,
     [tags.upd]: sql.upd,
-    [tags.or]: sql.or,
     [tags.mock]: sql.mock,
   };
   const tag_regex = new RegExp(
@@ -95,7 +84,7 @@ export const make_fake_expression = (
   }
 
   // ! fake raw``,and(),ins(),upd(),?: and other expression. sql`` is just a special kind of raw``.
-  function fake_expression(n: ts.Expression) {
+  function fake_expression(n: ts.Expression): any {
     if (ts.isIdentifier(n)) {
       const symbol = type_checker.getSymbolAtLocation(n);
       if (symbol && symbol.valueDeclaration) {
@@ -117,14 +106,18 @@ export const make_fake_expression = (
         const t = type_checker.getTypeAtLocation(n.arguments[0]);
         let fake: any = null;
         if (fn == sql.mock) {
-          const argument = n.arguments && n.arguments[0] as ts.ObjectLiteralExpression;
-          if (argument) {
-            const property = argument.properties.find(p => p.name.getText() === 'mock');
-            const text: string = (<any>property)?.initializer?.text;
-            if (text) {
-              return { [sql.symbol]: true, text, values: [] };
-            }
-          }
+          debugger;
+          console.log(n);
+          // n.typeArguments[0].getText()
+          // // (n.arguments[0] as ts.StringLiteral).text
+          // const argument = n.arguments && n.arguments[0] as ts.ObjectLiteralExpression;
+          // if (argument) {
+          //   const property = argument.properties.find(p => p.name.getText() === 'mock');
+          //   const text: string = (<any>property)?.initializer?.text;
+          //   if (text) {
+          //     return { [sql.symbol]: true, text, values: [] };
+          //   }
+          // }
         }
         if (fn == sql.and || fn == sql.upd || fn == sql.ins) {
           const ut = t.getNumberIndexType() as ts.UnionType;
@@ -146,7 +139,7 @@ export const make_fake_expression = (
             fake = [object_type_to_fake(ut)];
           }
         }
-        return fn(fake);
+        return (fn as any)(fake);
       }
       const symbol = type_checker.getSymbolAtLocation(n.expression);
       if (symbol && symbol.valueDeclaration) {
