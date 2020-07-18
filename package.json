@@ -36,6 +36,7 @@
     "typescript": "^3.0.0"
   },
   "dependencies": {
+    "@xialvjun/js-utils": "^0.3.7",
     "commander": "^5.0.0",
     "lunr": "^2.3.8",
     "shell-quote": "^1.7.2",

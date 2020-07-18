@@ -3,18 +3,7 @@ import * as path from "path";
 
 import ts from "typescript";
 import { quote } from "shell-quote";
-
-export const is_array = (obj: any) => Object.prototype.toString.call(obj) === "[object Array]";
-
-export const deep_flatten = (arr: any[]) => {
-  let new_arr = [];
-  new_arr = arr.reduce((acc, cv) => acc.concat(cv), []);
-  while (new_arr.length !== arr.length) {
-    arr = new_arr;
-    new_arr = arr.reduce((acc, cv) => acc.concat(cv), []);
-  }
-  return new_arr;
-};
+import { merge } from "@xialvjun/js-utils";
 
 export const find_all_nodes = (sourceFile: ts.SourceFile, cond: (n: ts.Node) => boolean) => {
   const result: ts.Node[] = [];
@@ -52,23 +41,16 @@ export const get_all_ts_files = (dirpath: string) => {
   return ts_files;
 };
 
-export function report(sourceFile: ts.SourceFile, node: ts.Node, message: string, level: 1 | 2 | 3 = 3) {
+// ! level 不用 3, console 也不用 error, 不然做 输出管道 就很麻烦
+export function report(sourceFile: ts.SourceFile, node: ts.Node, message: string, level: 1 | 2 = 1) {
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-  console[(["", "info", "warn", "error"] as const)[level]](
-    `${sourceFile.fileName} (${line + 1},${character + 1}): ${message}\n\n`,
-  );
-}
-
-export function index_of_array(parent: any[], child: any[]) {
-  I: for (let i = 0; i < parent.length; i++) {
-    J: for (let j = 0; j < child.length; j++) {
-      if (parent[i + j] !== child[j]) {
-        continue I;
-      }
-    }
-    return i;
-  }
-  return -1;
+  let str =
+    `${sourceFile.fileName} (${line + 1},${character + 1}):\n${message}`
+      .split("\n")
+      .filter(v => v.trim())
+      .map(it => "-- " + it)
+      .join("\n") + "\n\n";
+  console[(["", "info", "warn", "error"] as const)[level]](str);
 }
 
 export interface Tags {
@@ -89,10 +71,10 @@ export interface TsSqlPluginConfig {
   error_cost?: number;
   warn_cost?: number;
   info_cost?: number;
-  cost_pattern?: string;
+  cost_pattern: string | null;
   tags: Tags;
   command: string;
-  schema_command?: string;
+  schema_command: string | null;
 }
 
 export const default_mock = "0";
@@ -109,15 +91,18 @@ export const default_tags: Tags = {
 };
 export const default_command = `psql -c`;
 
-export const merge_defaults = (config?: TsSqlPluginConfig) => {
-  config = {
-    mock: default_mock,
-    cost_pattern: default_cost_pattern.source,
-    command: default_command,
-    schema_command: "pg",
-    ...config,
-    tags: { ...default_tags, ...config?.tags },
-  } as TsSqlPluginConfig;
+export const merge_defaults = (...configs: TsSqlPluginConfig[]) => {
+  const config: TsSqlPluginConfig = merge(
+    {
+      mock: default_mock,
+      cost_pattern: default_cost_pattern.source,
+      command: default_command,
+      schema_command: "pg",
+      tags: { ...default_tags },
+    },
+    ...configs,
+  );
+  config.cost_pattern = config.cost_pattern || default_cost_pattern.source;
   if (config.schema_command === "pg") {
     config.schema_command = `${config.command} ${quote([
       `copy (select table_schema, table_name, column_name from information_schema.columns WHERE table_schema=CURRENT_SCHEMA()) to stdout delimiter ','`,
@@ -135,5 +120,5 @@ export type SchemaInfo = {
   schema: string;
   table: string;
   column: string;
-  id: number
+  id: number;
 }[];

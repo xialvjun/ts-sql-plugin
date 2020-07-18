@@ -1,8 +1,9 @@
 import ts from 'typescript'; // used as value, passed in by tsserver at runtime
 // import tss from 'typescript/lib/tsserverlibrary'; // used as type only
+import { is_array, deep_flatten } from '@xialvjun/js-utils';
 
-import sql from './sql';
-import { is_array, deep_flatten, Tags } from './utils';
+import sql from '../sql';
+import { Tags } from './utils';
 
 export const make_fake_expression = (
   type_checker: ts.TypeChecker,

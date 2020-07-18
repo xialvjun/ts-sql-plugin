@@ -1,8 +1,10 @@
+# common
 .cache/
 .vscode/
 .gitignore.d/
 node_modules/
 dist/
-
-*.js
 *.map
+
+# specific
+*.js

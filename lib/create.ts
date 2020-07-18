@@ -2,6 +2,7 @@ import * as child_process from "child_process";
 
 import tss from "typescript/lib/tsserverlibrary";
 import { decorateWithTemplateLanguageService } from "typescript-template-language-service-decorator";
+import shq from "shell-quote";
 
 import { find_all_nodes, merge_defaults } from "./utils";
 import { make_fake_expression } from "./make_fake_expression";
@@ -10,11 +11,10 @@ import lunr from "lunr";
 import { parseDirectives } from "./directiveParser";
 
 export function makeCreate(mod: { typescript: typeof tss }) {
-  return function create(info: ts.server.PluginCreateInfo): ts.LanguageService {
+  return function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
     const logger = (msg: string) => info.project.projectService.logger.info(`[ts-sql-plugin] ${msg}`);
 
     const config = merge_defaults(info.config);
-
     const cost_pattern = new RegExp(config.cost_pattern!);
 
     const proxy = new Proxy(info.languageService, {
@@ -50,12 +50,18 @@ export function makeCreate(mod: { typescript: typeof tss }) {
               for (const qc of query_configs) {
                 let s: string = qc.text.replace(/\?\?/gm, "null");
 
-                let stdout = "" as any;
-                try {
-                  stdout = child_process.execSync(`${config.command} 'EXPLAIN ${s}'`);
-                } catch (error) {
-                  const stderr_str = error.process?.stderr?.toString("utf8");
-                  return make_diagnostic(1, tss.DiagnosticCategory.Error, stderr_str + "\n" + s);
+                // ! Never pass unsanitized user input to child_process.execSync.
+                // let stdout = "";
+                // try {
+                //   stdout = child_process.execSync(`${config.command} 'EXPLAIN ${s}'`, { encoding: 'utf8' });
+                // } catch (error) {
+                //   return make_diagnostic(1, tss.DiagnosticCategory.Error, error.stderr + "\n" + s);
+                // }
+
+                const [_command, ..._command_args] = (shq.parse(config.command).concat("EXPLAIN " + s) as any) as string[];
+                const p = child_process.spawnSync(_command, _command_args, { encoding: "utf8" });
+                if (p.status) {
+                  return make_diagnostic(1, tss.DiagnosticCategory.Error, p.stderr);
                 }
 
                 const directives = parseDirectives(s);
@@ -64,8 +70,7 @@ export function makeCreate(mod: { typescript: typeof tss }) {
                   [config.error_cost, config.warn_cost, config.info_cost].some(it => it != void 0) &&
                   !directives.some(x => x.directive === "ignore-cost")
                 ) {
-                  const stdout_str = stdout.toString("utf8");
-                  const match = stdout_str.match(cost_pattern);
+                  const match = p.stdout.match(cost_pattern);
                   if (match) {
                     const [_, cost_str] = match;
                     const cost = Number(cost_str);
@@ -90,7 +95,7 @@ export function makeCreate(mod: { typescript: typeof tss }) {
                     return make_diagnostic(
                       1,
                       tss.DiagnosticCategory.Error,
-                      `can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout_str}\n${s}`,
+                      `can not extract cost with cost_pattern: ${cost_pattern.source}\n${p.stdout}\n${s}`,
                     );
                   }
                 }
@@ -107,8 +112,12 @@ export function makeCreate(mod: { typescript: typeof tss }) {
       return proxy;
     }
 
-    const schema_info_raw = child_process.execSync(config.schema_command).toString("utf8");
-    const schema_info = schema_info_raw
+    const [_schema_command, ..._schema_command_args] = shq.parse(config.schema_command) as any as string[];
+    const schema_info_p = child_process.spawnSync(_schema_command, _schema_command_args, { encoding: 'utf8' });
+    if (schema_info_p.status) {
+      throw Error(schema_info_p.stderr);
+    }
+    const schema_info = schema_info_p.stdout
       .split("\n")
       .map(it => it.match(/\w+/g))
       .filter(it => it?.length === 3)
