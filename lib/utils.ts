@@ -44,12 +44,11 @@ export const get_all_ts_files = (dirpath: string) => {
 // ! level 不用 3, console 也不用 error, 不然做 输出管道 就很麻烦
 export function report(sourceFile: ts.SourceFile, node: ts.Node, message: string, level: 1 | 2 = 1) {
   const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-  let str =
-    `${sourceFile.fileName} (${line + 1},${character + 1}):\n${message}`
-      .split("\n")
-      .filter(v => v.trim())
-      .map(it => "-- " + it)
-      .join("\n") + "\n\n";
+  let str = `${sourceFile.fileName} (${line + 1},${character + 1}):\n${message}`
+    .split("\n")
+    .filter(v => v.trim())
+    .map(it => "-- " + it)
+    .join("\n");
   console[(["", "info", "warn", "error"] as const)[level]](str);
 }
 

@@ -104,22 +104,22 @@ export const make_fake_expression = (
     if (ts.isCallExpression(n)) {
       const fn = fns[(n.expression.getLastToken() || n.expression).getText()];
       if (!!fn) {
+        if (fn == sql.mock) {
+          if (n.typeArguments?.length !== 1) {
+            return sql.raw`You must assign typeArgument to sql.mock`;
+          }
+          const t = type_checker.getTypeFromTypeNode(n.typeArguments[0]);
+          const ts: ts.StringLiteralType[] = [];
+          let has_error_type = false;
+          const get_types = (t: ts.Type) => t.isStringLiteral() ? ts.push(t) : t.isUnion() ? t.types.forEach(get_types) : (has_error_type=true);
+          get_types(t);
+          if (has_error_type) {
+            return sql.raw`The typeArgument of sql.mock must be String type`;
+          }
+          return ts.map(t => sql.raw([t.value] as any));
+        }
         const t = type_checker.getTypeAtLocation(n.arguments[0]);
         let fake: any = null;
-        if (fn == sql.mock) {
-          debugger;
-          console.log(n);
-          // n.typeArguments[0].getText()
-          // // (n.arguments[0] as ts.StringLiteral).text
-          // const argument = n.arguments && n.arguments[0] as ts.ObjectLiteralExpression;
-          // if (argument) {
-          //   const property = argument.properties.find(p => p.name.getText() === 'mock');
-          //   const text: string = (<any>property)?.initializer?.text;
-          //   if (text) {
-          //     return { [sql.symbol]: true, text, values: [] };
-          //   }
-          // }
-        }
         if (fn == sql.and || fn == sql.upd || fn == sql.ins) {
           const ut = t.getNumberIndexType() as ts.UnionType;
           if (fn == sql.ins && !!ut) {

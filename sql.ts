@@ -42,7 +42,7 @@ sql.and = (obj: object) => {
   let text = kvs
     .map(([k, v]) => {
       values.push(v);
-      return escape_identifier(k) + " ??";
+      return validate_identifier(k) + " ??";
     })
     .join(" AND ");
   return { [symbol]: true, text, values };
@@ -65,7 +65,7 @@ sql.ins = (obj_or_objs: object | object[]) => {
   let objs: any[] = [].concat(obj_or_objs as any);
   let keys = Object.keys(Object.assign({}, ...objs)).sort();
   let values: any[] = [];
-  let text = `(${keys.map(k => escape_identifier(k).split(" ")[0]).join(", ")}) VALUES ${objs
+  let text = `(${keys.map(k => validate_identifier(k).split(" ")[0]).join(", ")}) VALUES ${objs
     .map(
       obj =>
         `(${keys
@@ -87,7 +87,7 @@ sql.upd = (obj: object) => {
   let text = kvs
     .map(([k, v]) => {
       values.push(v);
-      return escape_identifier(k) + " ??";
+      return validate_identifier(k) + " ??";
     })
     .join(", ");
   return { [symbol]: true, text, values };
@@ -95,20 +95,15 @@ sql.upd = (obj: object) => {
 
 sql.mock = <M extends string>(value: any) => value;
 
-function escape_identifier(identifier: string) {
-  let [schema, table, column, operator]: string[] = ["", "", "", ""];
-  [column = "", operator = "="] = identifier.replace(/"/g, "").split(" ");
-  let idents = column.split(".");
-  if (idents.length === 1) {
-    column = idents[0];
+function validate_identifier(identifier: string) {
+  const match_space = identifier.match(/\s/g);
+  if (!match_space) {
+    return identifier + ' =';
   }
-  if (idents.length === 2) {
-    [table, column] = idents;
+  if (match_space.length === 1) {
+    return identifier;
   }
-  if (idents.length === 3) {
-    [schema, table, column] = idents;
-  }
-  return `"${schema}"."${table}"."${column}" ${operator}`.replace(/""\./g, "");
+  throw Error("ts-sql-plugin sql param object key can not have more than one space");
 }
 
 // ? 有想过把所有数据都放在类型系统上, 这样 sql.raw`` 得到的结果就可以作为变量到处传递了, 不需要限制死在 sql`` 内部使用, 与运行时等同...但问题是 TemplateStringsArray 把字符串模板的 const 字符串信息丢失了, 这里只能 typescript 上游去解决, 这样在类型上根本无法得到 raw 里面的字符串, 至于从变量传递作用域上, 那结果就是完全不确定的

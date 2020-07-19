@@ -117,17 +117,17 @@ program
     const initProgram = ts.createProgram(get_all_ts_files(path.dirname(ts_config_path)), ts_config.compilerOptions);
     let fake_expression = make_fake_expression(initProgram.getTypeChecker(), plugin_config.tags);
     let has_error = false;
-    console.log("-- Start init sql check and emit...\n\n");
+    console.log("-- Start init sql check and emit...");
     initProgram.getSourceFiles().forEach(f => {
       if (!cli_config.exclude.test(f.fileName)) {
         delint(f);
       }
     });
     if (has_error) {
-      console.log("-- Your code can not pass all sql test!!!\n");
+      console.log("\n\n-- Your code can not pass all sql test!!!\n");
       process.exit(1);
     }
-    console.log("-- Init sql check and emit finished.\n");
+    console.log("\n\n-- Init sql check and emit finished.\n");
 
     function delint(sourceFile: ts.SourceFile) {
       delintNode(sourceFile);
@@ -154,7 +154,7 @@ program
                 }
               }
 
-              console.log(`-- EXPLAIN\n${s};`);
+              console.log(`\n\n-- EXPLAIN\n${s};`);
               let stdout = "";
               // try {
               //   stdout = child_process.execSync(`${plugin_config.command} ${quote([`EXPLAIN ${s}`])}`, { encoding: 'utf8', windowsHide: true });
