@@ -1,13 +1,13 @@
-import * as child_process from "child_process";
+import child_process from "child_process";
 
 import tss from "typescript/lib/tsserverlibrary";
 import { decorateWithTemplateLanguageService } from "typescript-template-language-service-decorator";
 import shq from "shell-quote";
+import lunr from "lunr";
 
 import { find_all_nodes, merge_defaults } from "./utils";
 import { make_fake_expression } from "./make_fake_expression";
 import { SqlTemplateAutocomplete } from "./autocomplete";
-import lunr from "lunr";
 import { parseDirectives } from "./directiveParser";
 
 export function makeCreate(mod: { typescript: typeof tss }) {
@@ -48,7 +48,7 @@ export function makeCreate(mod: { typescript: typeof tss }) {
               // one sql`select * from person ${xxx ? sql.raw`aaa` : sql.raw`bbb`}` may generate two sqls, need to be explained one by one
               let query_configs = fake_expression(n);
               for (const qc of query_configs) {
-                let s: string = qc.text.replace(/\?\?/gm, "null");
+                let s: string = qc.text.replace(/\?\?/gm, config.mock);
 
                 // ! Never pass unsanitized user input to child_process.execSync.
                 // let stdout = "";
@@ -58,10 +58,12 @@ export function makeCreate(mod: { typescript: typeof tss }) {
                 //   return make_diagnostic(1, tss.DiagnosticCategory.Error, error.stderr + "\n" + s);
                 // }
 
-                const [_command, ..._command_args] = (shq.parse(config.command).concat("EXPLAIN " + s) as any) as string[];
+                const [_command, ..._command_args] = (shq
+                  .parse(config.command)
+                  .concat("EXPLAIN " + s) as any) as string[];
                 const p = child_process.spawnSync(_command, _command_args, { encoding: "utf8" });
                 if (p.status) {
-                  return make_diagnostic(1, tss.DiagnosticCategory.Error, p.stderr);
+                  return make_diagnostic(1, tss.DiagnosticCategory.Error, p.stderr + "\n" + s);
                 }
 
                 const directives = parseDirectives(s);
@@ -112,8 +114,8 @@ export function makeCreate(mod: { typescript: typeof tss }) {
       return proxy;
     }
 
-    const [_schema_command, ..._schema_command_args] = shq.parse(config.schema_command) as any as string[];
-    const schema_info_p = child_process.spawnSync(_schema_command, _schema_command_args, { encoding: 'utf8' });
+    const [_schema_command, ..._schema_command_args] = (shq.parse(config.schema_command) as any) as string[];
+    const schema_info_p = child_process.spawnSync(_schema_command, _schema_command_args, { encoding: "utf8" });
     if (schema_info_p.status) {
       throw Error(schema_info_p.stderr);
     }
@@ -133,9 +135,9 @@ export function makeCreate(mod: { typescript: typeof tss }) {
       new SqlTemplateAutocomplete(
         lunr(function () {
           this.ref("id");
-          this.field("column");
           this.field("schema");
           this.field("table");
+          this.field("column");
           schema_info.forEach(schema_info_item => this.add(schema_info_item));
         }),
         schema_info,
@@ -144,7 +146,7 @@ export function makeCreate(mod: { typescript: typeof tss }) {
         //   return acc;
         // }, {} as any),
       ),
-      { tags: ["sql"], enableForStringWithSubstitutions: true },
+      { tags: [config.tags.sql, config.tags.raw], enableForStringWithSubstitutions: true },
     );
   };
 }

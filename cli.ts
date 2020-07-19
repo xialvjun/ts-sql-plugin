@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import * as crypto from "crypto";
-import * as fs from "fs";
-import * as path from "path";
-import * as child_process from "child_process";
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import child_process from "child_process";
 
 import ts from "typescript";
 import { program } from "commander";
