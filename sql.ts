@@ -1,4 +1,4 @@
-const raw = (texts: TemplateStringsArray, ...vs: any[]) => {
+const raw = (texts: TemplateStringsArray | string[], ...vs: any[]) => {
   let text = texts[0];
   let values: any[] = [];
   vs.forEach((v, idx) => {
