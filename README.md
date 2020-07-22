@@ -121,7 +121,7 @@ const s1 = sql`
 
 // you can emit sql to explicit file
 // this will be emitted to emit-sql/allAttribute.sql file
-// you may change `emit-sql` folder to another via `--emit-out-dir` option of cli
+// you may change `emit-sql` folder to another via `--emit_dir` option of cli
 // also `--watch` option of cli can be used to emit it in realtime
 const s1 = sql`
   -- ts-sql-plugin:emit("allAttribute")
