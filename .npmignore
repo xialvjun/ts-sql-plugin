@@ -3,6 +3,9 @@
 .vscode/
 .github/
 .gitignore.d/
-*.map
 
 # specific
+.prettierrc
+node_modules
+test
+tsconfig.json
