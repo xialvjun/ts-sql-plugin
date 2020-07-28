@@ -146,11 +146,11 @@ program
                 if (emit_directive) {
                   const fileName = (emit_directive.arg as string) ?? crypto.createHash("sha1").update(s).digest("hex");
                   const filePath = `${cli_config.emit_dir}/${fileName}.sql`;
-                  fs.writeFile(filePath, s + ";", err => {
-                    if (err) {
-                      console.log(`-- Emit Error occured, when emitting file "${filePath}"`);
-                    }
-                  });
+                  try {
+                    fs.writeFileSync(filePath, s + ";");
+                  } catch(err) {
+                    console.log(`-- Emit Error occured, when emitting file "${filePath}"`);
+                  }
                 }
               }
 
