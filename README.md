@@ -124,7 +124,8 @@ const s1 = sql`
 // you may change `emit-sql` folder to another via `--emit_dir` option of cli
 // also `--watch` option of cli can be used to emit it in realtime
 const s1 = sql`
-  -- ts-sql-plugin:emit("allAttribute")
+  /* ts-sql-plugin:emit("IAllAttribute") */
+  /* @name IAllAttribute */
   select * from subscriptions.attribute
 `;
 ```
@@ -133,8 +134,13 @@ const s1 = sql`
 
 ## Generate types from emitted sql
 
-You can use [types-from-sql](https://github.com/o175/types-from-sql) tool
-for generating types from your emitted sql via `--ts-sql-plugin:emit("someName")` directive.
+You can use [pgtyped](https://github.com/adelsz/pgtyped) tool
+for generating types from your emitted sql via directive:
+```
+/* ts-sql-plugin:emit("ISomeInterface") */
+/* @name ISomeInterface */
+``` 
+
 For generate types in realtime, use `--watch` option of cli.
 
 ## VSCode syntax highlight extension
