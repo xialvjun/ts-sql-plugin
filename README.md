@@ -120,12 +120,12 @@ const s1 = sql`
 `;
 
 // you can emit sql to explicit file
-// this will be emitted to emit-sql/allAttribute.sql file
+// this will be emitted to emit-sql/AllAttribute.sql file
 // you may change `emit-sql` folder to another via `--emit_dir` option of cli
 // also `--watch` option of cli can be used to emit it in realtime
 const s1 = sql`
-  /* ts-sql-plugin:emit("IAllAttribute") */
-  /* @name IAllAttribute */
+  /* ts-sql-plugin:emit("AllAttribute") */
+  /* @name AllAttribute */
   select * from subscriptions.attribute
 `;
 ```
@@ -137,8 +137,8 @@ const s1 = sql`
 You can use [pgtyped](https://github.com/adelsz/pgtyped) tool
 for generating types from your emitted sql via directive:
 ```
-/* ts-sql-plugin:emit("ISomeInterface") */
-/* @name ISomeInterface */
+/* ts-sql-plugin:emit("SomeInterface") */
+/* @name SomeInterface */
 ``` 
 
 For generate types in realtime, use `--watch` option of cli.
