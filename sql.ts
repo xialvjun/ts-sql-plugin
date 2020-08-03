@@ -3,7 +3,7 @@ const raw = (texts: TemplateStringsArray | string[], ...vs: any[]) => {
   let values: any[] = [];
   vs.forEach((v, idx) => {
     if (!!v && v[symbol]) {
-      text += v.text.replace(/\$\d+/g, "??");
+      text += v.text;
       values = [...values, ...v.values];
     } else {
       text += "??";
@@ -96,6 +96,7 @@ sql.upd = (obj: object) => {
 sql.mock = <M extends string>(value: any) => value;
 
 function validate_identifier(identifier: string) {
+  // we can believe a functionnal sql (ignore it's good or bad) has to include more than one space, so forbid it
   const match_space = identifier.match(/\s/g);
   if (!match_space) {
     return identifier + ' =';
