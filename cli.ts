@@ -20,7 +20,7 @@ import {
   TsSqlPluginConfig,
 } from "./lib/utils";
 import { make_fake_expression } from "./lib/make_fake_expression";
-import { parseDirectives } from "./lib/directiveParser";
+import { directiveRegex, parseDirectives } from "./lib/directiveParser";
 
 program
   .option("-w, --watch", `watch mode of cli`)
@@ -140,7 +140,14 @@ program
           if (n.tag.getText() === plugin_config.tags.sql) {
             let query_configs = fake_expression(n);
             for (const qc of query_configs) {
-              let s: string = qc.text.replace(/\?\?/gm, plugin_config.mock);
+              let ignoreEmitDirective = false;
+              let s: string = (<string>qc.text.trim())
+                .split("\n")
+                .filter(line =>
+                  line.match(directiveRegex) && ignoreEmitDirective ? false : (ignoreEmitDirective = true),
+                )
+                .join("\n")
+                .replace(/\?\?/gm, plugin_config.mock);
 
               const directives = parseDirectives(s);
               if (cli_config.emit_dir) {
