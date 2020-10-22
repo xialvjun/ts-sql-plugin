@@ -117,6 +117,7 @@ program
     const initProgram = ts.createProgram(get_all_ts_files(path.dirname(ts_config_path)), ts_config.compilerOptions);
     let fake_expression = make_fake_expression(initProgram.getTypeChecker(), plugin_config.tags);
     let has_error = false;
+    let report_errors: [sourceFile: ts.SourceFile, node: ts.Node, message: string, level?: 1 | 2][] = [];
     console.log("-- Start init sql check and emit...");
     initProgram.getSourceFiles().forEach(f => {
       if (!cli_config.exclude.test(f.fileName)) {
@@ -125,6 +126,7 @@ program
     });
     if (has_error) {
       console.log("\n\n-- Your code can not pass all sql test!!!\n");
+      report_errors.forEach(args => report(...args));
       process.exit(1);
     }
     console.log("\n\n-- Init sql check and emit finished.\n");
@@ -148,7 +150,7 @@ program
                   const filePath = `${cli_config.emit_dir}/${fileName}.sql`;
                   try {
                     fs.writeFileSync(filePath, s + ";");
-                  } catch(err) {
+                  } catch (err) {
                     console.log(`-- Emit Error occured, when emitting file "${filePath}"`);
                   }
                 }
@@ -171,6 +173,7 @@ program
               if (p.status) {
                 has_error = true;
                 report(sourceFile, node, p.stderr);
+                report_errors.push([sourceFile, node, p.stderr]);
                 break;
               }
 
@@ -185,6 +188,7 @@ program
                   if (cost > plugin_config.error_cost!) {
                     has_error = true;
                     report(sourceFile, node, `Error: explain cost is too high: ${cost}\n${s}`, 2);
+                    report_errors.push([sourceFile, node, `Error: explain cost is too high: ${cost}\n${s}`, 2]);
                     break;
                   } else if (cost > plugin_config.warn_cost!) {
                     report(sourceFile, node, `Warn: explain cost is at warning: ${cost}\n${s}`, 2);
@@ -199,6 +203,12 @@ program
                     `Error: can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout}\n${s}`,
                     2,
                   );
+                  report_errors.push([
+                    sourceFile,
+                    node,
+                    `Error: can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout}\n${s}`,
+                    2,
+                  ]);
                   break;
                 }
               }
