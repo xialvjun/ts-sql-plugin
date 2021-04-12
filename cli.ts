@@ -65,7 +65,7 @@ program
   .description(
     `Explain all your sqls in your code to test them. \n\nEg: ts-sql-plugin -p ./my_ts_projet/tsconfig.json -c 'psql -c'`,
   )
-  .action(() => {
+  .action(async () => {
     let cli_config: any = program.opts();
     if (typeof cli_config.command !== "string") {
       cli_config.command = undefined;
@@ -78,7 +78,7 @@ program
     }
     const { config: ts_config } = ts.parseConfigFileTextToJson(
       ts_config_path,
-      fs.readFileSync(ts_config_path, { encoding: "utf8" }),
+      await fs.promises.readFile(ts_config_path, { encoding: "utf8" }),
     );
     let plugin_config: TsSqlPluginConfig = (ts_config.compilerOptions.plugins as any[])?.find(
       it => it.name === "ts-sql-plugin",
