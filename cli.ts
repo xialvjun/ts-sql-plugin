@@ -121,8 +121,8 @@ program
     let report_errors: [sourceFile: ts.SourceFile, node: ts.Node, message: string, level?: 1 | 2][] = [];
     console.log("-- Start init sql check and emit...");
     function chunkArray(array: readonly ts.SourceFile[], chunkSize: number){
-      var arrayLength = array.length;
-      var tempArray = [];
+      let arrayLength = array.length;
+      let tempArray = [];
 
       for (let index = 0; index < arrayLength; index += chunkSize) {
         let chunk = array.slice(index, index + chunkSize);
@@ -140,15 +140,16 @@ program
     for (const chunk of chunks) {
       await Promise.all(chunk.map(mapper));
     }
+    for await (const chunk of chunks) {
+      (chunk.map(mapper));
+    }
+
     if (has_error) {
       console.log("\n\n-- Your code can not pass all sql test!!!\n");
       report_errors.forEach(args => report(...args));
       process.exit(1);
     }
 
-    for await (const chunk of chunks) {
-      (chunk.map(mapper));
-    }
     console.log("\n\n-- Init sql check and emit finished.\n");
 
     async function delint(sourceFile: ts.SourceFile) {
