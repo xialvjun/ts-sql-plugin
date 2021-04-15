@@ -193,6 +193,7 @@ program
                   has_error = true;
                   report(sourceFile, node, bl.toString());
                   report_errors.push([sourceFile, node, bl.toString()]);
+                  break;
                 }
                 console.log(`\n\n-- EXPLAIN\n${s};`);
                 stdout = bl.toString()
