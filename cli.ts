@@ -3,7 +3,6 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import child_process from "child_process";
 
 import ts from "typescript";
 import { program } from "commander";
@@ -161,7 +160,6 @@ program
           let n = node as ts.TaggedTemplateExpression;
           if (n.tag.getText() === plugin_config.tags.sql) {
             let query_configs = fake_expression(n);
-            try {
               for (const qc of query_configs) {
                 let s: string = trim_middle_comments(qc.text).replace(/\?\?/gm, plugin_config.mock);
 
@@ -186,29 +184,20 @@ program
                 //   report(sourceFile, node, error.stderr);
                 //   break;
                 // }
-                console.log(`\n\n-- EXPLAIN\n${s};`);
                 let stdout = "";
                 const [_command, ..._command_args] = (shq
                   .parse(plugin_config.command)
                   .concat("EXPLAIN " + s) as any) as string[];
-                /*const p = child_process.spawnSync(_command, _command_args, { encoding: "utf8" });
-                stdout = p.stdout;
-                if (p.status) {
-                  has_error = true;
-                  report(sourceFile, node, p.stderr);
-                  report_errors.push([sourceFile, node, p.stderr]);
-                  break;
-                }*/
+
                 const spawn = require('await-spawn')
-                const bl = await spawn(_command, _command_args, { encoding: "utf8" })
-                try {
-                  stdout = bl.toString()
-                }
-                catch(e) {
+                const bl = await spawn(_command, _command_args, { encoding: "utf8" }).catch((e: any) => e);
+                if (bl instanceof Error) {
                   has_error = true;
-                  report(sourceFile, node, e.stderr.toString());
-                  report_errors.push([sourceFile, node, e.stderr.toString()]);
+                  report(sourceFile, node, bl.toString());
+                  report_errors.push([sourceFile, node, bl.toString()]);
                 }
+                console.log(`\n\n-- EXPLAIN\n${s};`);
+                stdout = bl.toString()
 
                 if (
                   (plugin_config.error_cost || plugin_config.warn_cost || plugin_config.info_cost) &&
@@ -246,11 +235,6 @@ program
                   }
                 }
               }
-            } catch(e) {
-              has_error = true;
-              report(sourceFile, node, e.stderr.toString());
-              report_errors.push([sourceFile, node, e.stderr.toString()]);
-            }
           }
         }})();
 
