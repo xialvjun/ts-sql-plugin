@@ -21,6 +21,7 @@ import {
 } from "./lib/utils";
 import { make_fake_expression } from "./lib/make_fake_expression";
 import { directiveRegex, parseDirectives } from "./lib/directiveParser";
+
 (async function main() {
 program
   .option("-w, --watch", `watch mode of cli`)
@@ -135,12 +136,9 @@ program
         await delint(f);
       }
     }
-    const chunks = chunkArray(initProgram.getSourceFiles(), 4);
-    for (const chunk of chunks) {
-      await Promise.all(chunk.map(mapper));
-    }
+    const chunks = chunkArray(initProgram.getSourceFiles(), 9);
     for await (const chunk of chunks) {
-      (chunk.map(mapper));
+      await Promise.all(chunk.map(mapper));
     }
 
     if (has_error) {
@@ -237,7 +235,6 @@ program
               }
           }
         }})();
-
         ts.forEachChild(node, delintNode);
       }
     }
