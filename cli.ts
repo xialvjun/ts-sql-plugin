@@ -5,7 +5,6 @@ import fs from "fs";
 import path from "path";
 import spawn from "await-spawn";
 import flattenDeep from "lodash.flattendeep";
-import chunk from "lodash.chunk";
 
 import ts from "typescript";
 import { program } from "commander";
