@@ -3,7 +3,9 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import child_process from "child_process";
+import spawn from "await-spawn";
+import flattenDeep from "lodash.flattendeep";
+import chunk from "lodash.chunk";
 
 import ts from "typescript";
 import { program } from "commander";
@@ -65,7 +67,7 @@ program
   .description(
     `Explain all your sqls in your code to test them. \n\nEg: ts-sql-plugin -p ./my_ts_projet/tsconfig.json -c 'psql -c'`,
   )
-  .action(() => {
+  .action(async () => {
     let cli_config: any = program.opts();
     if (typeof cli_config.command !== "string") {
       cli_config.command = undefined;
@@ -78,7 +80,7 @@ program
     }
     const { config: ts_config } = ts.parseConfigFileTextToJson(
       ts_config_path,
-      fs.readFileSync(ts_config_path, { encoding: "utf8" }),
+      await fs.promises.readFile(ts_config_path, { encoding: "utf8" }),
     );
     let plugin_config: TsSqlPluginConfig = (ts_config.compilerOptions.plugins as any[])?.find(
       it => it.name === "ts-sql-plugin",
@@ -120,11 +122,9 @@ program
     let has_error = false;
     let report_errors: [sourceFile: ts.SourceFile, node: ts.Node, message: string, level?: 1 | 2][] = [];
     console.log("-- Start init sql check and emit...");
-    initProgram.getSourceFiles().forEach(f => {
-      if (!cli_config.exclude.test(f.fileName)) {
-        delint(f);
-      }
-    });
+    for (const file of initProgram.getSourceFiles().filter(f => !cli_config.exclude.test(f.fileName))) {
+      await delint(file);
+    }
     if (has_error) {
       console.log("\n\n-- Your code can not pass all sql test!!!\n");
       report_errors.forEach(args => report(...args));
@@ -132,93 +132,89 @@ program
     }
     console.log("\n\n-- Init sql check and emit finished.\n");
 
-    function delint(sourceFile: ts.SourceFile) {
-      delintNode(sourceFile);
+    function recursiveAllChildrenNodes(node: ts.Node): ts.Node[] {
+      return (node.getChildren().map(n => [n, ...recursiveAllChildrenNodes(n)]) as unknown) as ts.Node[];
+    }
 
-      function delintNode(node: ts.Node) {
-        if (node.kind === ts.SyntaxKind.TaggedTemplateExpression) {
-          let n = node as ts.TaggedTemplateExpression;
-          if (n.tag.getText() === plugin_config.tags.sql) {
-            let query_configs = fake_expression(n);
-            for (const qc of query_configs) {
-              let s: string = trim_middle_comments(qc.text).replace(/\?\?/gm, plugin_config.mock);
+    async function delint(sourceFile: ts.SourceFile) {
+      const treeNodes = recursiveAllChildrenNodes(sourceFile);
+      const sqlTagNodes = flattenDeep(treeNodes).filter(
+        (n): n is ts.TaggedTemplateExpression =>
+          n.kind === ts.SyntaxKind.TaggedTemplateExpression &&
+          (n as ts.TaggedTemplateExpression).tag.getText() === plugin_config.tags.sql,
+      );
 
-              const directives = parseDirectives(s);
-              if (cli_config.emit_dir) {
-                const emit_directive = directives.find(d => d.directive === "emit");
-                if (emit_directive) {
-                  const fileName = (emit_directive.arg as string) ?? crypto.createHash("sha1").update(s).digest("hex");
-                  const filePath = `${cli_config.emit_dir}/${fileName}.sql`;
-                  try {
-                    fs.writeFileSync(filePath, s + ";");
-                  } catch (err) {
-                    console.log(`-- Emit Error occured, when emitting file "${filePath}"`);
-                  }
-                }
-              }
+      await Promise.all(sqlTagNodes.map(delintNode));
 
-              console.log(`\n\n-- EXPLAIN\n${s};`);
-              let stdout = "";
-              // try {
-              //   stdout = child_process.execSync(`${plugin_config.command} ${quote([`EXPLAIN ${s}`])}`, { encoding: 'utf8', windowsHide: true });
-              // } catch (error) {
-              //   has_error = true;
-              //   report(sourceFile, node, error.stderr);
-              //   break;
-              // }
-              const [_command, ..._command_args] = (shq
-                .parse(plugin_config.command)
-                .concat("EXPLAIN " + s) as any) as string[];
-              const p = child_process.spawnSync(_command, _command_args, { encoding: "utf8" });
-              stdout = p.stdout;
-              if (p.status) {
-                has_error = true;
-                report(sourceFile, node, p.stderr);
-                report_errors.push([sourceFile, node, p.stderr]);
-                break;
-              }
+      async function delintNode(node: ts.TaggedTemplateExpression) {
+        let query_configs = fake_expression(node);
+        for (const qc of query_configs) {
+          let s: string = trim_middle_comments(qc.text).replace(/\?\?/gm, plugin_config.mock);
 
-              if (
-                (plugin_config.error_cost || plugin_config.warn_cost || plugin_config.info_cost) &&
-                !directives.some(d => d.directive === "ignore-cost")
-              ) {
-                const match = stdout.match(cost_pattern);
-                if (match) {
-                  const [_, cost_str] = match;
-                  const cost = Number(cost_str);
-                  if (cost > plugin_config.error_cost!) {
-                    has_error = true;
-                    report(sourceFile, node, `Error: explain cost is too high: ${cost}\n${s}`, 2);
-                    report_errors.push([sourceFile, node, `Error: explain cost is too high: ${cost}\n${s}`, 2]);
-                    break;
-                  } else if (cost > plugin_config.warn_cost!) {
-                    report(sourceFile, node, `Warn: explain cost is at warning: ${cost}\n${s}`, 2);
-                  } else if (cost > plugin_config.info_cost!) {
-                    report(sourceFile, node, `Info: explain cost is ok: ${cost}\n${s}`, 1);
-                  }
-                } else {
-                  has_error = true;
-                  report(
-                    sourceFile,
-                    node,
-                    `Error: can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout}\n${s}`,
-                    2,
-                  );
-                  report_errors.push([
-                    sourceFile,
-                    node,
-                    `Error: can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout}\n${s}`,
-                    2,
-                  ]);
-                  break;
-                }
+          const directives = parseDirectives(s);
+          if (cli_config.emit_dir) {
+            const emit_directive = directives.find(d => d.directive === "emit");
+            if (emit_directive) {
+              const fileName = (emit_directive.arg as string) ?? crypto.createHash("sha1").update(s).digest("hex");
+              const filePath = `${cli_config.emit_dir}/${fileName}.sql`;
+              try {
+                fs.writeFileSync(filePath, s + ";");
+              } catch (err) {
+                console.log(`-- Emit Error occured, when emitting file "${filePath}"`);
               }
             }
           }
-        }
 
-        ts.forEachChild(node, delintNode);
+          console.log(`\n\n-- EXPLAIN\n${s};`);
+          const [_command, ..._command_args] = (shq
+            .parse(plugin_config.command)
+            .concat("EXPLAIN " + s) as any) as string[];
+          const p = await spawn(_command, _command_args).catch((e: Error & { stderr: string }) => e);
+          const stdout = p.toString();
+          if (p instanceof Error) {
+            has_error = true;
+            report(sourceFile, node, p.stderr);
+            report_errors.push([sourceFile, node, p.stderr]);
+            break;
+          }
+
+          if (
+            (plugin_config.error_cost || plugin_config.warn_cost || plugin_config.info_cost) &&
+            !directives.some(d => d.directive === "ignore-cost")
+          ) {
+            const match = stdout.match(cost_pattern);
+            if (match) {
+              const [_, cost_str] = match;
+              const cost = Number(cost_str);
+              if (cost > plugin_config.error_cost!) {
+                has_error = true;
+                report(sourceFile, node, `Error: explain cost is too high: ${cost}\n${s}`, 2);
+                report_errors.push([sourceFile, node, `Error: explain cost is too high: ${cost}\n${s}`, 2]);
+                break;
+              } else if (cost > plugin_config.warn_cost!) {
+                report(sourceFile, node, `Warn: explain cost is at warning: ${cost}\n${s}`, 2);
+              } else if (cost > plugin_config.info_cost!) {
+                report(sourceFile, node, `Info: explain cost is ok: ${cost}\n${s}`, 1);
+              }
+            } else {
+              has_error = true;
+              report(
+                sourceFile,
+                node,
+                `Error: can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout}\n${s}`,
+                2,
+              );
+              report_errors.push([
+                sourceFile,
+                node,
+                `Error: can not extract cost with cost_pattern: ${cost_pattern.source}\n${stdout}\n${s}`,
+                2,
+              ]);
+              break;
+            }
+          }
+        }
       }
     }
   })
-  .parse(process.argv);
+  .parseAsync(process.argv);
