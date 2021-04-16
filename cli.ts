@@ -62,6 +62,9 @@ program
     "-c, --command <string>",
     `command to be run to explain the fake sql (default: "${default_command}")` /* default_command */,
   )
+  .option(
+    "--threads <number>", "async threads"
+  )
   .description(
     `Explain all your sqls in your code to test them. \n\nEg: ts-sql-plugin -p ./my_ts_projet/tsconfig.json -c 'psql -c'`,
   )
@@ -136,8 +139,8 @@ program
         await delint(f);
       }
     }
-    const chunks = chunkArray(initProgram.getSourceFiles(), 9);
-    for await (const chunk of chunks) {
+    const chunks = chunkArray(initProgram.getSourceFiles(), plugin_config.threads || 4);
+    for (const chunk of chunks) {
       await Promise.all(chunk.map(mapper));
     }
 
@@ -149,11 +152,11 @@ program
 
     console.log("\n\n-- Init sql check and emit finished.\n");
 
-    async function delint(sourceFile: ts.SourceFile) {
-      delintNode(sourceFile);
+    function delint(sourceFile: ts.SourceFile):Promise<void[]> {
+      return delintNode(sourceFile);
 
-      function delintNode(node: ts.Node) {
-        (async () => {
+      // @ts-ignore
+      async function delintNode(node: ts.Node) {
         if (node.kind === ts.SyntaxKind.TaggedTemplateExpression) {
           let n = node as ts.TaggedTemplateExpression;
           if (n.tag.getText() === plugin_config.tags.sql) {
@@ -188,6 +191,7 @@ program
                   .concat("EXPLAIN " + s) as any) as string[];
 
                 const spawn = require('await-spawn')
+
                 const bl = await spawn(_command, _command_args, { encoding: "utf8" }).catch((e: any) => e);
                 if (bl instanceof Error) {
                   has_error = true;
@@ -195,8 +199,7 @@ program
                   report_errors.push([sourceFile, node, bl.toString()]);
                   break;
                 }
-                console.log(`\n\n-- EXPLAIN\n${s};`);
-                stdout = bl.toString()
+                stdout = bl.toString();
 
                 if (
                   (plugin_config.error_cost || plugin_config.warn_cost || plugin_config.info_cost) &&
@@ -235,9 +238,13 @@ program
                 }
               }
           }
-        }})();
-        ts.forEachChild(node, delintNode);
+        }
+        let array: ts.Node[] = [];
+        const pushToArray = (elem: ts.Node) => array.push(elem);
+        ts.forEachChild(node, child => {pushToArray(child)} );
+        return (Promise.all(array.map(delintNode)))
       }
     }
+
   });
-  await program.parseAsync(process.argv);})();
+await program.parseAsync(process.argv);})();

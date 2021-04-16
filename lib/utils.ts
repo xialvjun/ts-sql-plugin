@@ -70,6 +70,7 @@ export interface TsSqlPluginConfig {
   error_cost?: number;
   warn_cost?: number;
   info_cost?: number;
+  threads?: number;
   cost_pattern: string | null;
   tags: Tags;
   command: string;
