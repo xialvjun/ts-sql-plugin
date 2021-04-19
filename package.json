@@ -27,9 +27,7 @@
     "@types/mocha": "^7.0.2",
     "@types/node": "^12.12.41",
     "@types/shell-quote": "^1.7.0",
-    "await-spawn": "4.0.2",
     "chai": "^4.2.0",
-    "lodash.flattendeep": "4.4.0",
     "mocha": "^7.2.0",
     "ts-node": "^8.10.2",
     "typescript": "^4.0.2"
@@ -39,7 +37,9 @@
   },
   "dependencies": {
     "@xialvjun/js-utils": "^0.3.7",
+    "await-spawn": "4.0.2",
     "commander": "^5.0.0",
+    "lodash.flattendeep": "4.4.0",
     "lunr": "^2.3.8",
     "shell-quote": "^1.7.2",
     "tslib": "^2.0.0",
