@@ -121,3 +121,18 @@ export type SchemaInfo = {
   column: string;
   id: number;
 }[];
+
+export const trim_middle_comments = (q: string) => {
+  let isHeadComment = true;
+  return q
+    .trim()
+    .split("\n")
+    .filter(l =>
+      l.trim().match(/^\-\-/) || l.trim().match(/^\/\*.*\*\/$/)
+        ? isHeadComment
+          ? true
+          : false
+        : ((isHeadComment = false), true),
+    )
+    .join("\n");
+};

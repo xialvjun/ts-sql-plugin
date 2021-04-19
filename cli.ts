@@ -19,9 +19,10 @@ import {
   get_all_ts_files,
   report,
   TsSqlPluginConfig,
+  trim_middle_comments,
 } from "./lib/utils";
 import { make_fake_expression } from "./lib/make_fake_expression";
-import { parseDirectives } from "./lib/directiveParser";
+import { directiveRegex, parseDirectives } from "./lib/directiveParser";
 
 program
   .option("-w, --watch", `watch mode of cli`)
@@ -148,7 +149,7 @@ program
       async function delintNode(node: ts.TaggedTemplateExpression) {
         let query_configs = fake_expression(node);
         for (const qc of query_configs) {
-          let s: string = qc.text.replace(/\?\?/gm, plugin_config.mock);
+          let s: string = trim_middle_comments(qc.text).replace(/\?\?/gm, plugin_config.mock);
 
           const directives = parseDirectives(s);
           if (cli_config.emit_dir) {
