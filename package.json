@@ -1,6 +1,6 @@
 {
   "name": "ts-sql-plugin",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "TypeScript Language Service Plugin for SQL with a tagged template strings SQL builder.",
   "keywords": [
     "typescript",
