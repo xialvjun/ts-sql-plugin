@@ -86,6 +86,9 @@ program
     plugin_config = merge_defaults(plugin_config, cli_config);
     const cost_pattern = new RegExp(plugin_config.cost_pattern!);
 
+    const initProgram = ts.createProgram(get_all_ts_files(path.dirname(ts_config_path)), ts_config.compilerOptions);
+    let fake_expression = make_fake_expression(initProgram.getTypeChecker(), plugin_config.tags);
+
     if (cli_config.watch) {
       const watchHost = ts.createWatchCompilerHost(ts_config_path, undefined, ts.sys);
       const watchProgram = ts.createWatchProgram(watchHost);
@@ -115,8 +118,6 @@ program
       return;
     }
 
-    const initProgram = ts.createProgram(get_all_ts_files(path.dirname(ts_config_path)), ts_config.compilerOptions);
-    let fake_expression = make_fake_expression(initProgram.getTypeChecker(), plugin_config.tags);
     let has_error = false;
     let report_errors: [sourceFile: ts.SourceFile, node: ts.Node, message: string, level?: 1 | 2][] = [];
     console.log("-- Start init sql check and emit...");
