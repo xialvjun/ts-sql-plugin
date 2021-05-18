@@ -1,5 +1,5 @@
 const raw = (texts: TemplateStringsArray | string[], ...vs: any[]) => {
-  let text = texts[0];
+  let text = texts[0] || '';
   let values: any[] = [];
   vs.forEach((v, idx) => {
     if (!!v && v[symbol]) {
