@@ -127,7 +127,7 @@ program
     }
     if (has_error) {
       console.log("\n\n-- Your code can not pass all sql test!!!\n");
-      report_errors.forEach(args => report(...args));
+      report_errors.forEach(args => report(...args, 2));
       process.exit(1);
     }
     console.log("\n\n-- Init sql check and emit finished.\n");
