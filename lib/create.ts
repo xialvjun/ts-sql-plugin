@@ -9,6 +9,7 @@ import { find_all_nodes, merge_defaults } from "./utils";
 import { make_fake_expression } from "./make_fake_expression";
 import { SqlTemplateAutocomplete } from "./autocomplete";
 import { parseDirectives } from "./directiveParser";
+import { addToSqlCache, existsInSqlCache } from './cache';
 
 export function makeCreate(mod: { typescript: typeof tss }) {
   return function create(info: tss.server.PluginCreateInfo): tss.LanguageService {
@@ -49,6 +50,7 @@ export function makeCreate(mod: { typescript: typeof tss }) {
               let query_configs = fake_expression(n);
               for (const qc of query_configs) {
                 let s: string = qc.text.replace(/\?\?/gm, config.mock);
+                let resp = make_diagnostic(1, tss.DiagnosticCategory.Suggestion, s);
 
                 // ! Never pass unsanitized user input to child_process.execSync.
                 // let stdout = "";
@@ -61,6 +63,11 @@ export function makeCreate(mod: { typescript: typeof tss }) {
                 const [_command, ..._command_args] = (shq
                   .parse(config.command)
                   .concat("EXPLAIN " + s) as any) as string[];
+
+                if (existsInSqlCache(_command, _command_args)) {
+                  return resp;
+                }
+
                 const p = child_process.spawnSync(_command, _command_args, { encoding: "utf8" });
                 if (p.status) {
                   return make_diagnostic(1, tss.DiagnosticCategory.Error, p.stderr + "\n" + s);
@@ -84,14 +91,14 @@ export function makeCreate(mod: { typescript: typeof tss }) {
                       );
                     }
                     if (cost > config.warn_cost!) {
-                      return make_diagnostic(
+                      resp = make_diagnostic(
                         1,
                         tss.DiagnosticCategory.Warning,
                         `explain cost is at warning: ${cost}\n${s}`,
                       );
                     }
                     if (cost > config.info_cost!) {
-                      return make_diagnostic(1, tss.DiagnosticCategory.Suggestion, `explain cost is ok: ${cost}\n${s}`);
+                      resp = make_diagnostic(1, tss.DiagnosticCategory.Suggestion, `explain cost is ok: ${cost}\n${s}`);
                     }
                   } else {
                     return make_diagnostic(
@@ -101,6 +108,9 @@ export function makeCreate(mod: { typescript: typeof tss }) {
                     );
                   }
                 }
+
+                addToSqlCache(_command, _command_args);
+                return resp;
               }
             });
             return [...origin_diagnostics, ...(explain_rss.filter(v => !!v) as any[])];

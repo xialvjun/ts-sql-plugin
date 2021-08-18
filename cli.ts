@@ -23,6 +23,7 @@ import {
 } from "./lib/utils";
 import { make_fake_expression } from "./lib/make_fake_expression";
 import { directiveRegex, parseDirectives } from "./lib/directiveParser";
+import { addToSqlCache, existsInSqlCache } from './lib/cache';
 
 program
   .option("-w, --watch", `watch mode of cli`)
@@ -169,6 +170,11 @@ program
           const [_command, ..._command_args] = (shq
             .parse(plugin_config.command)
             .concat("EXPLAIN " + s) as any) as string[];
+
+          if (existsInSqlCache(_command, _command_args)) {
+            continue;
+          }
+
           const p = await spawn(_command, _command_args).catch((e: Error & { stderr: string }) => e);
           const stdout = p.toString();
           if (p instanceof Error) {
@@ -213,6 +219,8 @@ program
               break;
             }
           }
+
+          addToSqlCache(_command, _command_args);
         }
       }
     }
