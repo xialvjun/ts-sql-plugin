@@ -1,14 +1,17 @@
+const parseValue = (v: any) => {
+    return !!v && v[symbol]
+        ? { text: v.text, values: v.values}
+        : { text: '??', values: [v] };
+}
+
 const raw = (texts: TemplateStringsArray | string[], ...vs: any[]) => {
   let text = texts[0] || '';
   let values: any[] = [];
+  let parseResult = null;
   vs.forEach((v, idx) => {
-    if (!!v && v[symbol]) {
-      text += v.text;
-      values = [...values, ...v.values];
-    } else {
-      text += "??";
-      values.push(v);
-    }
+    parseResult = parseValue(v);
+    text += parseResult.text;
+    values.push(...parseResult.values)
     text += texts[idx + 1] || "";
   });
   return { [symbol]: true, text, values };
@@ -65,13 +68,15 @@ sql.ins = (obj_or_objs: object | object[]) => {
   let objs: any[] = [].concat(obj_or_objs as any);
   let keys = Object.keys(Object.assign({}, ...objs)).sort();
   let values: any[] = [];
+  let parseResult = null;
   let text = `(${keys.map(k => validate_identifier(k).split(" ")[0]).join(", ")}) VALUES ${objs
     .map(
       obj =>
         `(${keys
           .map(k => {
-            values.push(obj[k]);
-            return "??";
+            parseResult = parseValue(obj[k])
+            values.push(...parseResult.values);
+            return parseResult.text;
           })
           .join(", ")})`,
     )
@@ -84,10 +89,12 @@ sql.upd = (obj: object) => {
     .filter(([k, v]) => v !== undefined)
     .sort(([ka, va], [kb, vb]) => (ka < kb ? -1 : ka > kb ? 1 : 0));
   let values: any[] = [];
+  let parseResult = null
   let text = kvs
     .map(([k, v]) => {
-      values.push(v);
-      return validate_identifier(k) + " ??";
+      parseResult = parseValue(v);
+      values.push(...parseResult.values);
+      return validate_identifier(k) + `${parseResult.text}`;
     })
     .join(", ");
   return { [symbol]: true, text, values };
