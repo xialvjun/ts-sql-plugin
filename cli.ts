@@ -161,7 +161,7 @@ program
               try {
                 fs.writeFileSync(filePath, s + ";");
               } catch (err) {
-                console.log(`-- Emit Error occured, when emitting file "${filePath}"`);
+                console.log(`-- Emit Error occurred, when emitting file "${filePath}"`);
               }
             }
           }
